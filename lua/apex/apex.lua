@@ -1,5 +1,6 @@
 -- module LOADING
 local APP_CFG    = require("cfg/app")
+local helpers    = require("src/utils/helpers")
 
 -- AC refs
 local SIM     = ac.getSim()
