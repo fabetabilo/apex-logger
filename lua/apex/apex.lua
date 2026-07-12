@@ -1,6 +1,8 @@
 -- module LOADING
 local APP_CFG    = require("cfg/app")
 local helpers    = require("src/utils/helpers")
+local appUI      = require("src/ui/ui_helpers")
+local tabAbout   = require("src/ui/tab_about")
 
 -- AC refs
 local SIM     = ac.getSim()
@@ -15,7 +17,15 @@ local appMain = {
     version = APP_CFG.VERSION,
 }
 
+-- APP initialization =============================================
+local currentTab = 1
+
+local tabs = {
+    { name = "About" },
+}
+
 local function initApp()
+    tabAbout.init(appMain, appUI)
     ac.log("Apex initialized")
 end
 
@@ -28,7 +38,14 @@ initApp()
 
 --- app main UI render function
 function script.main(dt)
-    ac.setWindowTitle('apex', appMain.name .. ' v' .. appMain.version)
+    local title = appMain.name .. ' v' .. appMain.version
+    ac.setWindowTitle('apex', title)
+    
+    currentTab = appUI.drawTabBar(tabs, currentTab)
+    
+    if currentTab == 1 then
+        tabAbout.draw()
+    end
 end
 
 --- physics update function (which must be called at physics tick rate)
