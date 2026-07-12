@@ -16,9 +16,58 @@ local appMain = {
     name    = APP_CFG.NAME,
     id      = string.lower(APP_CFG.NAME),
     version = APP_CFG.VERSION,
+    folderPattern = APP_CFG.FOLDER_PATTERN,
+    filePattern   = APP_CFG.FILE_PATTERN,
     
     settings = {},
+    settingsPath = "",
 }
+
+
+-- Settings ===========================================================
+local ACDocuments = ac.getFolder(ac.FolderID.ACDocuments)
+local driverName = ac.getDriverName(0) or "Player"
+
+local defaultSettings = {
+    enable          = false,
+    driver          = driverName,
+    drivers         = { driverName },
+    dataRate        = 50,
+    autoLoggingOffRace = false,
+    forceRaceMode   = false,
+}
+
+-- settings persistence
+appMain.settingsPath = ACDocuments .. "/apps/" .. appMain.id .. "/settings.json"
+
+local function loadSettings()
+    local path = appMain.settingsPath
+    if io.fileExists(path) then
+        local data = io.load(path)
+        if data and data ~= "" then
+            local parsed = JSON.parse(data)
+            if parsed then
+                -- merge with the defaults preserving new keys
+                for k, v in pairs(defaultSettings) do
+                    if parsed[k] == nil then
+                        parsed[k] = v
+                    end
+                end
+
+                appMain.settings = parsed
+                return
+            end
+        end
+    end
+    -- if no valid settings, use defaults copy via JSON round-trip
+    appMain.settings = JSON.parse(JSON.stringify(defaultSettings))
+end
+
+appMain.saveSettings = function()
+    local jsonStr = helpers.jsonPretty(appMain.settings)
+    io.saveAsync(appMain.settingsPath, jsonStr)
+end
+
 
 -- APP initialization =============================================
 local appLogger = nil
@@ -30,8 +79,14 @@ local tabs = {
 }
 
 local function initApp()
+    loadSettings()
     tabSettings.init(appMain, appUI, appLogger, helpers, APP_CFG)
     tabAbout.init(appMain, appUI)
+    -- ensures lap directory exists for lap data files
+    local lapsDir = ac.dirname() .. "\\laps"
+    if not io.dirExists(lapsDir) then
+        io.createDir(lapsDir)
+    end
     ac.log("Apex initialized")
 end
 
