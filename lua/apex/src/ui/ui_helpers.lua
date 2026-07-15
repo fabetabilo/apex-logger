@@ -1,3 +1,8 @@
+local SIM = ac.getSim()
+local CAR = ac.getCar(0)
+
+local OSpreciseClock = os.preciseClock
+
 local uiHelpers = {}
 
 -- App color palette RGBA
@@ -18,6 +23,53 @@ uiHelpers.colors = {
     TAB_HOVER_BG    = rgbm(0.25, 0.25, 0.25, 1),
     TAB_TEXT        = rgbm(0.9, 0.9, 0.9, 1),
 }
+
+
+-- In-app UI Log ================================================================
+-- a scrollable list of timestamped colored messages shown on the Logging tab
+uiHelpers.UIlog = {}
+uiHelpers.UIlogMaxLines = 30
+
+--- Adds a timestamped message to the UI log
+---@param msg string message text
+---@param color rgbm color for the message
+uiHelpers.updateUIlog = function(msg, color)
+    if msg == nil then msg = '' end
+    if color == nil then color = uiHelpers.colors.GREY end
+    local entry = {
+        time  = os.date("%X"),
+        msg   = msg,
+        color = color,
+    }
+    table.insert(uiHelpers.UIlog, 1, entry)
+    if #uiHelpers.UIlog > uiHelpers.UIlogMaxLines then
+        table.remove(uiHelpers.UIlog)
+    end
+end
+
+--- Clear all messages from the UI log
+uiHelpers.resetUIlog = function()
+    uiHelpers.UIlog = {}
+end
+
+--- Draws the scrollable UI Log list with ImGui
+---@param height number available height for the log area
+uiHelpers.drawUIlog = function(height)
+    ui.pushStyleVar(ui.StyleVar.ItemSpacing, vec2(2, 1))
+    ui.beginChild("uiLog", vec2(ui.availableSpaceX(), height), false)
+    for _, entry in ipairs(uiHelpers.UIlog) do
+        ui.pushStyleColor(ui.StyleColor.Text, uiHelpers.colors.MID_GREY)
+        ui.text(entry.time)
+        ui.popStyleColor()
+        ui.sameLine(60)
+        ui.pushStyleColor(ui.StyleColor.Text, entry.color)
+        ui.text(entry.msg)
+        ui.popStyleColor()
+    end
+    ui.endChild()
+    ui.popStyleVar()
+end
+
 
 -- Tooltip =================================================================
 
@@ -123,5 +175,42 @@ uiHelpers.drawTabBar = function(tabs, currentTab)
     return selectedTab
 end
 
+
+-- App status helper ======================================================================
+
+--- Get current app status color and text
+---@param appState table main app state
+---@param logger table logger instance
+---@return rgbm color, string text
+uiHelpers.getStatusColorAndText = function(appState, logger)
+    local color = uiHelpers.colors.DARK_GREY  -- default: disabled
+    local stateText = "Disabled"
+
+    if appState.settings.enable then
+        if logger and logger.logging then
+            if logger.stint.isInRace then
+                -- logging race session
+                color = uiHelpers.colors.RED
+                stateText = "Logging race laps"
+            else
+                -- logging practice or hotlap session
+                color = uiHelpers.colors.ORANGE
+                stateText = "Logging laps"
+            end
+        else
+            -- enabled, but not logging
+            color = uiHelpers.colors.GREEN
+            stateText = "Enabled and waiting"
+        end
+
+        if appState.settings.forceRaceMode then
+            -- forced race mode
+            color = uiHelpers.colors.PURPLE
+            stateText = "Enabled Race Mode"
+        end
+    end
+
+    return color, stateText
+end
 
 return uiHelpers

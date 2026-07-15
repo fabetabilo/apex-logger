@@ -2,6 +2,7 @@
 local APP_CFG    = require("cfg/app")
 local helpers    = require("src/utils/helpers")
 local appUI      = require("src/ui/ui_helpers")
+local tabLogging = require("src/ui/tab_logging")
 local tabSettings = require("src/ui/tab_settings")
 local tabAbout   = require("src/ui/tab_about")
 
@@ -10,6 +11,8 @@ local SIM     = ac.getSim()
 local SESSION = ac.getSession(0)
 local CPHYS   = ac.getCarPhysics(0)
 local CAR     = ac.getCar(0)
+
+local OSpreciseClock = os.preciseClock
 
 -- app STATE
 local appMain = {
@@ -69,17 +72,26 @@ appMain.saveSettings = function()
 end
 
 
+-- Session management ================================================
+appMain.updateSession = function()
+    appMain.sessionName = helpers.getSessionType()
+    appMain.sessionType = SIM.raceSessionType
+end
+
+
 -- APP initialization =============================================
 local appLogger = nil
 local currentTab = 1
 
 local tabs = {
+    { name = "Logging" },
     { name = "Settings" },
     { name = "About" },
 }
 
 local function initApp()
     loadSettings()
+    tabLogging.init(appMain, appUI, appLogger, helpers)
     tabSettings.init(appMain, appUI, appLogger, helpers, APP_CFG)
     tabAbout.init(appMain, appUI)
     -- ensures lap directory exists for lap data files
@@ -105,8 +117,10 @@ function script.main(dt)
     currentTab = appUI.drawTabBar(tabs, currentTab)
     
     if currentTab == 1 then
-        tabSettings.draw()
+        tabLogging.draw()
     elseif currentTab == 2 then
+        tabSettings.draw()
+    elseif currentTab == 3 then
         tabAbout.draw()
     end
 end

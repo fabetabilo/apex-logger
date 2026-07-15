@@ -142,12 +142,14 @@ tabSettings.draw = function()
     if ui.checkbox("Auto off logging", appState.settings.autoLoggingOffRace) then
         appState.settings.autoLoggingOffRace = not appState.settings.autoLoggingOffRace
         appState.saveSettings()
+        appUI.updateUIlog("Auto off logging mode: " .. (appState.settings.autoLoggingOffRace and "active" or "inactive"), appUI.colors.GREY)
     end
     appUI.tooltip("Automatically disable logging when entering a race session")
 
     if ui.checkbox("Race Mode", appState.settings.forceRaceMode) then
         appState.settings.forceRaceMode = not appState.settings.forceRaceMode
         appState.saveSettings()
+        appUI.updateUIlog("Race mode: " .. (appState.settings.forceRaceMode and "active" or "inactive"), appUI.colors.GREY)
     end
     appUI.tooltip("Forcing race mode will always log, no auto-stop in pit, no restart. Stays recording until session end or disabled.")
 
