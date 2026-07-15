@@ -26,6 +26,10 @@ local appMain = {
     urlDocs   = APP_CFG.URL_DOCS,
     cspVersion = (ac.getPatchVersion() or "?") .. " (" .. (ac.getPatchVersionCode() or "?") .. ")",
     
+    sessionName = "",
+    sessionType = -1,
+    trackLayout = "",
+
     car = {
         hasAeromap    = false,
         aeroEncrypted = false,
@@ -120,6 +124,13 @@ end
 appMain.updateSession = function()
     appMain.sessionName = helpers.getSessionType()
     appMain.sessionType = SIM.raceSessionType
+    
+    local layout = ac.getTrackLayout()
+    if layout and layout ~= "" then
+        appMain.trackLayout = ac.getTrackID() .. "-" .. layout
+    else
+        appMain.trackLayout = ac.getTrackID()
+    end
 end
 
 
@@ -136,6 +147,9 @@ local tabs = {
 
 local function initApp()
     loadSettings()
+    
+    appMain.updateSession()
+    
     -- initialize UI tabs with its references
     tabLogging.init(appMain, appUI, appLogger, helpers)
     tabData.init(appMain, appUI)
