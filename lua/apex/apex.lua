@@ -3,6 +3,7 @@ local APP_CFG    = require("cfg/app")
 local helpers    = require("src/utils/helpers")
 local appUI      = require("src/ui/ui_helpers")
 local tabLogging = require("src/ui/tab_logging")
+local tabData    = require("src/ui/tab_data")
 local tabSettings = require("src/ui/tab_settings")
 local tabAbout   = require("src/ui/tab_about")
 
@@ -21,6 +22,14 @@ local appMain = {
     version = APP_CFG.VERSION,
     folderPattern = APP_CFG.FOLDER_PATTERN,
     filePattern   = APP_CFG.FILE_PATTERN,
+    urlUpdate = APP_CFG.URL_UPDATE,
+    urlDocs   = APP_CFG.URL_DOCS,
+    cspVersion = (ac.getPatchVersion() or "?") .. " (" .. (ac.getPatchVersionCode() or "?") .. ")",
+    
+    car = {
+        hasAeromap    = false,
+        aeroEncrypted = false,
+    },
     
     settings = {},
     settingsPath = "",
@@ -85,13 +94,16 @@ local currentTab = 1
 
 local tabs = {
     { name = "Logging" },
+    { name = "Data" },
     { name = "Settings" },
     { name = "About" },
 }
 
 local function initApp()
     loadSettings()
+    -- initialize UI tabs with its references
     tabLogging.init(appMain, appUI, appLogger, helpers)
+    tabData.init(appMain, appUI)
     tabSettings.init(appMain, appUI, appLogger, helpers, APP_CFG)
     tabAbout.init(appMain, appUI)
     -- ensures lap directory exists for lap data files
@@ -119,8 +131,10 @@ function script.main(dt)
     if currentTab == 1 then
         tabLogging.draw()
     elseif currentTab == 2 then
-        tabSettings.draw()
+        tabData.draw()
     elseif currentTab == 3 then
+        tabSettings.draw()
+    elseif currentTab == 4 then
         tabAbout.draw()
     end
 end
