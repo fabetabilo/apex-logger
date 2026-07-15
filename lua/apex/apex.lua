@@ -31,6 +31,19 @@ local appMain = {
         aeroEncrypted = false,
     },
     
+    pyAppLoaded = false,
+    pyBuffer = {
+        aeroDrag           = 0,
+        aeroDownforceFront = 0,
+        aeroDownforceRear  = 0,
+        damperTravelFL = 0,
+        damperTravelFR = 0,
+        damperTravelRL = 0,
+        damperTravelRR = 0,
+        damperTravelHF = 0,
+        damperTravelHR = 0,
+    },
+    
     settings = {},
     settingsPath = "",
 }
@@ -81,6 +94,28 @@ appMain.saveSettings = function()
 end
 
 
+-- Python buffer management =======================================================
+local function getPyBuffer()
+    if not appMain.pyAppLoaded then return end
+    -- from apex.py: "ac.ext_storeLua('apex.pySerialData')"
+    local rawData = ac.load(appMain.id .. '.pySerialData')
+    if rawData == nil or rawData == '' then return end
+    
+    local vals = rawData:split(',')
+    if #vals < 9 then return end
+    
+    appMain.pyBuffer.aeroDrag           = tonumber(vals[1]) or 0
+    appMain.pyBuffer.aeroDownforceFront = tonumber(vals[2]) or 0
+    appMain.pyBuffer.aeroDownforceRear  = tonumber(vals[3]) or 0
+    appMain.pyBuffer.damperTravelFL     = tonumber(vals[4]) or 0
+    appMain.pyBuffer.damperTravelFR     = tonumber(vals[5]) or 0
+    appMain.pyBuffer.damperTravelRL     = tonumber(vals[6]) or 0
+    appMain.pyBuffer.damperTravelRR     = tonumber(vals[7]) or 0
+    appMain.pyBuffer.damperTravelHF     = tonumber(vals[8]) or 0
+    appMain.pyBuffer.damperTravelHR     = tonumber(vals[9]) or 0
+end
+
+
 -- Session management ================================================
 appMain.updateSession = function()
     appMain.sessionName = helpers.getSessionType()
@@ -106,6 +141,9 @@ local function initApp()
     tabData.init(appMain, appUI)
     tabSettings.init(appMain, appUI, appLogger, helpers, APP_CFG)
     tabAbout.init(appMain, appUI)
+    
+    appMain.pyAppLoaded = ac.isPythonAppActive('apex')
+
     -- ensures lap directory exists for lap data files
     local lapsDir = ac.dirname() .. "\\laps"
     if not io.dirExists(lapsDir) then
