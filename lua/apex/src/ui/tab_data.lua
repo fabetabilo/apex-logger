@@ -38,8 +38,32 @@ tabData.draw = function()
     ui.text("Car Data")
     ui.offsetCursorY(5)
     
-    -- Todo: future relevant car data ~ ----------------------------------
-    
+    -- Car data
+    if appState.detailData then
+        for _, item in ipairs(appState.detailData) do
+            ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREY)
+            ui.text(item.id)
+            ui.popStyleColor()
+            
+            ui.sameLine(175)
+
+            local displayValue
+            if item.type == "Numeric" then
+                local dps = tonumber(item.dps) or 2
+                displayValue = string.format("%." .. dps .. "f", item.value)
+            else
+                displayValue = tostring(item.value)
+            end
+            ui.text(displayValue)
+            
+            ui.sameLine(275)
+
+            ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+            ui.text(item.unit or "")
+            ui.popStyleColor()
+        end
+    end
+
     -- Math items (computed values):
     if appState.mathItems then
         for _, item in ipairs(appState.mathItems) do

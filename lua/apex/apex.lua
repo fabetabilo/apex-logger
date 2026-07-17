@@ -1,6 +1,8 @@
 -- module LOADING
 local APP_CFG    = require("cfg/app")
 local helpers    = require("src/utils/helpers")
+local carDataMod = require("src/utils/car_data")
+local aero       = require("src/utils/aero")
 local appUI      = require("src/ui/ui_helpers")
 local tabLogging = require("src/ui/tab_logging")
 local tabData    = require("src/ui/tab_data")
@@ -33,7 +35,12 @@ local appMain = {
     car = {
         hasAeromap    = false,
         aeroEncrypted = false,
+        wheelBase     = 0,
+        cogLocation   = 0,
+        tyresAvail    = {},
     },
+    detailData = {},
+    mathItems  = {},
     
     pyAppLoaded = false,
     pyBuffer = {
@@ -147,8 +154,14 @@ local tabs = {
 
 local function initApp()
     loadSettings()
+
+    carDataMod.init(helpers)
+    appMain.detailData, appMain.mathItems = carDataMod.getDetailData(appMain)
+    appMain.car.tyresAvail = helpers.getTyresList()
     
     appMain.updateSession()
+
+    appMain.car.hasAeromap = aero.hasAeromap(appMain.pyBuffer, appMain.car)
     
     -- initialize UI tabs with its references
     tabLogging.init(appMain, appUI, appLogger, helpers)
