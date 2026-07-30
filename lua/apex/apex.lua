@@ -9,6 +9,8 @@ local tabData    = require("src/ui/tab_data")
 local tabSettings = require("src/ui/tab_settings")
 local tabAbout   = require("src/ui/tab_about")
 
+require("src/classes/logger")
+
 -- AC refs
 local SIM     = ac.getSim()
 local SESSION = ac.getSession(0)
@@ -31,6 +33,7 @@ local appMain = {
     sessionName = "",
     sessionType = -1,
     trackLayout = "",
+    spawnStart  = "",
 
     car = {
         hasAeromap    = false,
@@ -53,6 +56,11 @@ local appMain = {
         damperTravelRR = 0,
         damperTravelHF = 0,
         damperTravelHR = 0,
+    },
+    
+    icons = {
+        ok      = "at:assets/icons/info.png",
+        warning = "at:assets/icons/warn.png",
     },
     
     settings = {},
@@ -141,6 +149,13 @@ appMain.updateSession = function()
 end
 
 
+-- ~ global functions used by logger to avoid circular requires
+function getApexApp()     return appMain end
+function getApexUI()      return appUI end
+function getApexHelpers() return helpers end
+function getApexAero()    return aero end
+
+
 -- APP initialization =============================================
 local appLogger = nil
 local currentTab = 1
@@ -155,13 +170,23 @@ local tabs = {
 local function initApp()
     loadSettings()
 
+    -- always require manual activation at session start
+    appMain.settings.enable = false
+
     carDataMod.init(helpers)
     appMain.detailData, appMain.mathItems = carDataMod.getDetailData(appMain)
     appMain.car.tyresAvail = helpers.getTyresList()
     
     appMain.updateSession()
+    appMain.spawnStart = ac.getSessionSpawnSet(SIM.currentSessionIndex) or ""
 
     appMain.car.hasAeromap = aero.hasAeromap(appMain.pyBuffer, appMain.car)
+    if not appMain.car.aeroEncrypted then
+        aero.loadAeroData(appMain.car)
+    end
+    
+    appLogger = ApexLogger()
+    appLogger:initialize()
     
     -- initialize UI tabs with its references
     tabLogging.init(appMain, appUI, appLogger, helpers)
@@ -170,12 +195,23 @@ local function initApp()
     tabAbout.init(appMain, appUI)
     
     appMain.pyAppLoaded = ac.isPythonAppActive('apex')
+    
+    -- auto-off logging for race:
+    if appMain.settings.autoLoggingOffRace
+        and SIM.raceSessionType == ac.SessionType.Race then
+        appMain.settings.enable = false
+    end
 
     -- ensures lap directory exists for lap data files
     local lapsDir = ac.dirname() .. "\\laps"
     if not io.dirExists(lapsDir) then
         io.createDir(lapsDir)
     end
+    
+    -- clean old lap files:
+    helpers.cleanLapsFiles(lapsDir, appLogger)
+    
+    appUI.updateUIlog(appMain.name .. " initialized", appUI.colors.MID_GREY)
     ac.log("Apex initialized")
 end
 
@@ -188,7 +224,7 @@ initApp()
 
 --- app main UI render function
 function script.main(dt)
-    local title = appMain.name .. ' v' .. appMain.version
+    local title = appUI.getTitle(appMain, appLogger)
     ac.setWindowTitle('apex', title)
     
     currentTab = appUI.drawTabBar(tabs, currentTab)
@@ -207,16 +243,47 @@ end
 --- physics update function (which must be called at physics tick rate)
 function script.update(dt)
     -- physics step logic
+    if not appMain.settings.enable then return end
+    
+    getPyBuffer()
+    
+    if appLogger then
+        appLogger:step(dt)
+    end
+
 end
 
 --- session reset handler (called on teleport, restart, and others)
 function script.reset()
+    if appLogger and appLogger.logging then
+        if appMain.settings.forceRaceMode then
+            -- don't cancel in Race mode
+        else
+            appLogger:cancelStint()
+        end
+    end
 end
 
 --- session start handler
 ac.onSessionStart(function(sessionType, sessionIndex)
+    appMain.updateSession()
+    appMain.sessionType = sessionType
+
+    -- auto-off mode for race:
+    if appMain.settings.autoLoggingOffRace and sessionType == ac.SessionType.Race then
+        appMain.settings.enable = false
+    end
+
+    if appLogger then
+        appLogger:resetStint()
+        appLogger:setDatarates()
+    end
 end)
 
 --- release handler (app closing)
 ac.onRelease(function()
+    if appLogger and appLogger.logging then
+        appLogger:stop({ console = false, toast = false })
+    end
+    appMain.saveSettings()
 end)

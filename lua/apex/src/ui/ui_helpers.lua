@@ -81,6 +81,39 @@ uiHelpers.tooltip = function(text)
     end
 end
 
+-- Window app header =========================================================
+--- Builds the window title with current app and car in-track status
+---@param appState table main app state
+---@param logger table logger instance
+---@return string title
+uiHelpers.getTitle = function(appState, logger)
+    local parts = { appState.name }
+
+    if not appState.settings.enable then
+        parts[#parts + 1] = "inactive"
+    else
+        local mode = logger and logger.logging and "logging" or "active"
+        local rate = logger and logger.currentDataRate or appState.settings.dataRate
+        parts[#parts + 1] = mode .. " (" .. rate .. "Hz)"
+
+        if CAR.isInPitlane or CAR.isInPit then
+            parts[#parts + 1] = "in pit"
+        else
+            parts[#parts + 1] = "on track"
+        end
+
+        if appState.settings.forceRaceMode then
+            parts[#parts + 1] = "RM"
+        end
+        
+        if appState.settings.udpEnable then
+            parts[#parts + 1] = "TX UDP"
+        end
+    end
+
+    return table.concat(parts, " | ")
+end
+
 
 -- TAB BAR ==================================================================
 local tabScrollOffset = 0
@@ -190,19 +223,19 @@ uiHelpers.getStatusColorAndText = function(appState, logger)
         if logger and logger.logging then
             if logger.stint.isInRace then
                 -- logging race session
-                color = uiHelpers.colors.RED
-                stateText = "Logging race laps"
+                color = uiHelpers.colors.GREEN
+                stateText = "Running and logging race laps"
             else
                 -- logging practice or hotlap session
-                color = uiHelpers.colors.ORANGE
-                stateText = "Logging laps"
+                color = uiHelpers.colors.GREEN
+                stateText = "Running and logging laps"
             end
         else
             -- enabled, but not logging
-            color = uiHelpers.colors.GREEN
-            stateText = "Enabled and waiting"
+            color = uiHelpers.colors.YELLOW
+            stateText = "Running and waiting for stint"
         end
-
+        -- future review!!!!
         if appState.settings.forceRaceMode then
             -- forced race mode
             color = uiHelpers.colors.PURPLE
