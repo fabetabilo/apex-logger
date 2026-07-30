@@ -3,6 +3,7 @@ local APP_CFG    = require("cfg/app")
 local helpers    = require("src/utils/helpers")
 local carDataMod = require("src/utils/car_data")
 local aero       = require("src/utils/aero")
+local udpSender  = require("src/utils/udp_sender")
 local appUI      = require("src/ui/ui_helpers")
 local tabLogging = require("src/ui/tab_logging")
 local tabData    = require("src/ui/tab_data")
@@ -79,6 +80,9 @@ local defaultSettings = {
     dataRate        = 50,
     autoLoggingOffRace = false,
     forceRaceMode   = false,
+    udpEnable = false,
+    udpHost   = '127.0.0.1',
+    udpPort   = 9996,
 }
 
 -- settings persistence
@@ -154,6 +158,7 @@ function getApexApp()     return appMain end
 function getApexUI()      return appUI end
 function getApexHelpers() return helpers end
 function getApexAero()    return aero end
+function getApexUDP()     return udpSender end
 
 
 -- APP initialization =============================================
@@ -172,6 +177,7 @@ local function initApp()
 
     -- always require manual activation at session start
     appMain.settings.enable = false
+    appMain.settings.udpEnable = false
 
     carDataMod.init(helpers)
     appMain.detailData, appMain.mathItems = carDataMod.getDetailData(appMain)
@@ -184,6 +190,8 @@ local function initApp()
     if not appMain.car.aeroEncrypted then
         aero.loadAeroData(appMain.car)
     end
+    
+    udpSender.configure(appMain.settings)
     
     appLogger = ApexLogger()
     appLogger:initialize()
@@ -212,7 +220,6 @@ local function initApp()
     helpers.cleanLapsFiles(lapsDir, appLogger)
     
     appUI.updateUIlog(appMain.name .. " initialized", appUI.colors.MID_GREY)
-    ac.log("Apex initialized")
 end
 
 initApp()
@@ -243,7 +250,7 @@ end
 --- physics update function (which must be called at physics tick rate)
 function script.update(dt)
     -- physics step logic
-    if not appMain.settings.enable then return end
+    if not appMain.settings.enable and not appMain.settings.udpEnable then return end
     
     getPyBuffer()
     
@@ -286,4 +293,5 @@ ac.onRelease(function()
         appLogger:stop({ console = false, toast = false })
     end
     appMain.saveSettings()
+    udpSender.destroy()
 end)

@@ -257,6 +257,7 @@ function ApexLogger:initialize()
     self.appUI    = getApexUI()
     self.helpers  = getApexHelpers()
     self.aero     = getApexAero()
+    self.udpSender = getApexUDP()
     
     self.LOG     = false
     self.logging = false
@@ -770,6 +771,7 @@ function ApexLogger:updateChannels(rate)
     if self.logging then
         self.stint.lapTable[#self.stint.lapTable + 1] = Tconcat(lineTable, ";")
     end
+    self.udpSender.send(lineTable, rate)
 end
 
 

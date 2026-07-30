@@ -156,6 +156,32 @@ tabSettings.draw = function()
     ui.offsetCursorY(5)
     ui.separator()
     
+    ui.text("TX UDP Telemetry")
+    ui.offsetCursorY(5)
+    
+    ui.setNextItemWidth(120)
+    local newHost, hostChanged = ui.inputText("IP Address", appState.settings.udpHost)
+    if hostChanged then
+        appState.settings.udpHost = newHost
+        appState.saveSettings()
+        if appLogger and appLogger.udpSender then
+            appLogger.udpSender.configure(appState.settings)
+        end
+    end
+    
+    ui.setNextItemWidth(120)
+    local newPort, portChanged = ui.inputText("Port", tostring(appState.settings.udpPort), ui.InputTextFlags.CharsDecimal)
+    if portChanged then
+        appState.settings.udpPort = tonumber(newPort)
+        appState.saveSettings()
+        if appLogger and appLogger.udpSender then
+            appLogger.udpSender.configure(appState.settings)
+        end
+    end
+
+    ui.offsetCursorY(5)
+    ui.separator()
+    
     -- Shortcut buttons
     ui.text("Shortcuts")
     ui.offsetCursorY(5)
