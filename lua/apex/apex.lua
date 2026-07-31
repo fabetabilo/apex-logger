@@ -9,6 +9,7 @@ local tabLogging = require("src/ui/tab_logging")
 local tabData    = require("src/ui/tab_data")
 local tabSettings = require("src/ui/tab_settings")
 local tabAbout   = require("src/ui/tab_about")
+local statusHud  = require("src/ui/app_hud")
 
 require("src/classes/logger")
 
@@ -201,6 +202,7 @@ local function initApp()
     tabData.init(appMain, appUI)
     tabSettings.init(appMain, appUI, appLogger, helpers, APP_CFG)
     tabAbout.init(appMain, appUI)
+    statusHud.init(appMain, appLogger)
     
     appMain.pyAppLoaded = ac.isPythonAppActive('apex')
     
@@ -295,3 +297,7 @@ ac.onRelease(function()
     appMain.saveSettings()
     udpSender.destroy()
 end)
+
+function statusHudMain(dt) statusHud.main(dt) end
+function statusHudShow() statusHud.on_open() end
+function statusHudHide() statusHud.on_close() end
