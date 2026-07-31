@@ -307,7 +307,7 @@ function ApexLogger:cancelStint()
     self.logging = false
     self:resetStint()
     self.stint.lastCancel = os.preciseClock()
-    self.appUI.updateUIlog("stint cancelled", self.appUI.colors.MID_GREY)
+    self.appUI.updateUIlog("LOG: stint cancelled", self.appUI.colors.MID_GREY)
     self.helpers.notify(self.app.name, self.app.icons.ok, "Stint cancelled")
 end
 
@@ -371,7 +371,7 @@ function ApexLogger:newLap(report)
     end
 end
 
---- Save the current lap data as a file (for now .csv)
+--- Save the current lap data as .csv file
 function ApexLogger:saveLap(lapIndex)
     lapIndex = lapIndex or self.stint.lapCounter
     if self.LOG == false then return end
@@ -433,7 +433,7 @@ function ApexLogger:start()
     
     self:setChannelOrder()
     
-    self.appUI.updateUIlog("lap logging started", self.appUI.colors.GREEN)
+    self.appUI.updateUIlog("LOG: local logging started", self.appUI.colors.GREEN)
     
     self.logging = true
     self:newLap()
@@ -444,7 +444,7 @@ function ApexLogger:start()
     --- toast notification when app window is completely hidden (very handy)
     local appWin = ac.accessAppWindow('IMGUI_LUA_' .. self.app.name .. '_' .. self.app.id)
     if appWin and not appWin:visible() then
-        self.helpers.notify(self.app.name, self.app.icons.ok, 'Lap logging started ' .. self.currentDataRate .. 'Hz')
+        self.helpers.notify(self.app.name, self.app.icons.ok, 'Local lap logging started ' .. self.currentDataRate .. 'Hz')
     end
 end
 
@@ -463,7 +463,7 @@ function ApexLogger:stop(args)
     if not self:isLogValid() then
         self:resetStint()
         self.LOG = false
-        self.appUI.updateUIlog("invalid stint", self.appUI.colors.ORANGE)
+        self.appUI.updateUIlog("LOG: invalid stint", self.appUI.colors.ORANGE)
         if args.toast and (os.preciseClock() - self.stint.lastCancel > 5) then
             self.helpers.notify(self.app.name, self.app.icons.ok, 'No full lap, stint not saved')
         end
@@ -496,9 +496,9 @@ function ApexLogger:stop(args)
         io.saveAsync(jsonPath, log_json, function()
             local msg
             if self.app.settings.forceRaceMode then
-                msg = "saved locally"
+                msg = "LOG: saved log"
             else
-                msg = "saved locally " .. numLaps .. " laps"
+                msg = "LOG: saved " .. numLaps .. " laps"
             end
             self.appUI.updateUIlog(msg, self.appUI.colors.GREEN)
             if args.toast then
@@ -507,7 +507,7 @@ function ApexLogger:stop(args)
         end)
     else
         io.save(jsonPath, log_json)
-        self.appUI.updateUIlog("logged laps saved at:", self.appUI.colors.BLUE)
+        self.appUI.updateUIlog("LOG: logged laps saved at:", self.appUI.colors.BLUE)
     end
 end
 
@@ -890,7 +890,7 @@ function ApexLogger:step(dt)
                 - (CAR.lapTimeMs / 1000) - dt)
             self:saveLap()
             self:newLap(false)
-            self.appUI.updateUIlog("hotlap started", self.appUI.colors.GREY)
+            self.appUI.updateUIlog("LOG: hotlap started", self.appUI.colors.GREY)
             return
         end
     end

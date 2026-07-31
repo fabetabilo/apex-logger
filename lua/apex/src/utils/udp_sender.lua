@@ -23,7 +23,7 @@ function udpSender.init(host, port)
         
         local appUI = getApexUI and getApexUI()
         if appUI then
-            appUI.updateUIlog(string.format("tx mode started %s:%d", udpSender.host, udpSender.port), appUI.colors.GREEN)
+            appUI.updateUIlog(string.format("TX: started %s:%d", udpSender.host, udpSender.port), appUI.colors.GREEN)
         end
     else
         -- fallback if ac.net is provided instead
@@ -32,7 +32,7 @@ function udpSender.init(host, port)
             
             local appUI = getApexUI and getApexUI()
             if appUI then
-                appUI.updateUIlog(string.format("tx mode active: %s:%d", udpSender.host, udpSender.port), appUI.colors.GREEN)
+                appUI.updateUIlog(string.format("TX: active %s:%d", udpSender.host, udpSender.port), appUI.colors.GREEN)
             end
         else
             -- in case of socket module does not exist: we don't explode
@@ -42,7 +42,7 @@ function udpSender.init(host, port)
             
             local appUI = getApexUI and getApexUI()
             if appUI then 
-                appUI.updateUIlog("tx mode not available, socket module not found. ", appUI.colors.ORANGE)
+                appUI.updateUIlog("TX: logger mode not available, socket module not found. ", appUI.colors.ORANGE)
             end
         end
     end

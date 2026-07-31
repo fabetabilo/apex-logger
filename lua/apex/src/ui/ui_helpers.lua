@@ -87,7 +87,7 @@ end
 ---@param logger table logger instance
 ---@return string title
 uiHelpers.getTitle = function(appState, logger)
-    local parts = { appState.name }
+    local parts = { appState.name .. " Settings" }
 
     if not appState.settings.enable then
         parts[#parts + 1] = "inactive"
@@ -107,7 +107,7 @@ uiHelpers.getTitle = function(appState, logger)
         end
         
         if appState.settings.udpEnable then
-            parts[#parts + 1] = "TX UDP"
+            parts[#parts + 1] = "TX"
         end
     end
 
@@ -216,30 +216,22 @@ end
 ---@param logger table logger instance
 ---@return rgbm color, string text
 uiHelpers.getStatusColorAndText = function(appState, logger)
-    local color = uiHelpers.colors.DARK_GREY  -- default: disabled
-    local stateText = "Disabled"
+    local color = uiHelpers.colors.DARK_GREY
+    local stateText = "Inactive"
 
     if appState.settings.enable then
         if logger and logger.logging then
             if logger.stint.isInRace then
-                -- logging race session
                 color = uiHelpers.colors.GREEN
-                stateText = "Running and logging race laps"
+                stateText = "Logging race"
             else
                 -- logging practice or hotlap session
                 color = uiHelpers.colors.GREEN
-                stateText = "Running and logging laps"
+                stateText = "Logging"
             end
         else
-            -- enabled, but not logging
             color = uiHelpers.colors.YELLOW
-            stateText = "Running and waiting for stint"
-        end
-        -- future review!!!!
-        if appState.settings.forceRaceMode then
-            -- forced race mode
-            color = uiHelpers.colors.PURPLE
-            stateText = "Enabled Race Mode"
+            stateText = "Active and waiting for stint"
         end
     end
 

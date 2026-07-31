@@ -89,7 +89,7 @@ tabSettings.draw = function()
     ui.pushStyleVar(ui.StyleVar.IndentSpacing, 12)
     
     -- Driver information
-    ui.text("Driver information")
+    ui.text("Driver Information")
     ui.offsetCursorY(5)
     
     drawDriverCombo()
@@ -185,10 +185,6 @@ tabSettings.draw = function()
     -- Shortcut buttons
     ui.text("Shortcuts")
     ui.offsetCursorY(5)
-
-    if ui.button("Open laps folder##openLaps", vec2(ui.availableSpaceX(), 22)) then
-        os.openInExplorer(ac.dirname() .. "\\laps")
-    end
 
     if ui.button("Open settings file##openSettings", vec2(ui.availableSpaceX(), 22)) then
         os.openInExplorer(appState.settingsPath)

@@ -142,7 +142,7 @@ end
 
 -- File operations =================================================
 
---- Clean old lap txt files, keeping ones referenced by current log
+--- Clean old lap .csv files, keeping ones referenced by current log
 ---@param lapFolder string path to laps directory
 helpers.cleanLapsFiles = function(lapFolder, logger)
     try(
@@ -160,7 +160,7 @@ helpers.cleanLapsFiles = function(lapFolder, logger)
                 end
             end
 
-            io.scanDir(lapFolder, "lap_*.txt", function(fileName, fileAttributes)
+            io.scanDir(lapFolder, "lap_*.csv", function(fileName, fileAttributes)
                 local fPath = lapFolder .. "\\" .. fileName
                 if not table.contains(keep, fPath) then
                     io.deleteFile(fPath)

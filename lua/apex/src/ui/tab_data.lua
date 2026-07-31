@@ -19,8 +19,17 @@ end
 
 tabData.draw = function()
     ui.pushStyleVar(ui.StyleVar.IndentSpacing, 12)
+
+    ui.text("Laps Folder")
+    ui.offsetCursorY(5)
+    if ui.button("Open laps folder##openLaps", vec2(ui.availableSpaceX(), 22)) then
+        os.openInExplorer(ac.dirname() .. "\\laps")
+    end
+    if ui.itemHovered() then
+        appUI.tooltip("Open logged laps folder")
+    end
     
-    ui.text("Track Info")
+    ui.text("Track Information")
     ui.offsetCursorY(5)
 
     ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREY)
