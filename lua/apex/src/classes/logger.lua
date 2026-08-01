@@ -372,7 +372,7 @@ function ApexLogger:newLap(report)
 end
 
 --- Save the current lap data as .csv file
-function ApexLogger:saveLap(lapIndex)
+function ApexLogger:saveLap(lapIndex, signal)
     lapIndex = lapIndex or self.stint.lapCounter
     if self.LOG == false then return end
 
@@ -381,6 +381,12 @@ function ApexLogger:saveLap(lapIndex)
     self.LOG.lapFiles[#self.LOG.lapFiles + 1] = lapPath
     self.stint.lapCounter = self.stint.lapCounter + 1
     io.saveAsync(lapPath, str)
+    
+    --- signal HUD: lap was just saved
+    --- end-of-stint in-lap is skipped (signal=false)
+    if signal ~= false then
+        self.app.lapSavedAt = OSpreciseClock()
+    end
 end
 
 
@@ -470,7 +476,7 @@ function ApexLogger:stop(args)
         return
     end
 
-    self:saveLap(self.stint.lapCounter)  -- Save in-lap
+    self:saveLap(self.stint.lapCounter, false)  -- Save in-lap
     self.LOG.event.driver  = self.app.settings.driver
     self.LOG.csp           = self.app.cspVersion
 
@@ -496,9 +502,9 @@ function ApexLogger:stop(args)
         io.saveAsync(jsonPath, log_json, function()
             local msg
             if self.app.settings.forceRaceMode then
-                msg = "LOG: saved log"
+                msg = "Saved log"
             else
-                msg = "LOG: saved " .. numLaps .. " laps"
+                msg = "Saved " .. numLaps .. " laps"
             end
             self.appUI.updateUIlog(msg, self.appUI.colors.GREEN)
             if args.toast then

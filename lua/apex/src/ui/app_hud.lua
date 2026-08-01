@@ -1,7 +1,6 @@
--- HUD app subwindow status to show real-time logger status indicators
---  Indicators:
---      TX:  blinks while UDP is active (settings.udpEnable == true)
---      LOG: solid dot while logger is recording laps (appLogger.logging == true), also shows the standby status of the logger
+-- HUD app subwindow status to show real-time logger status indicators:
+--      TX: blinks while UDP is active (settings.udpEnable == true)
+--      LOG: solid dot while logger is recording laps, blink dot when lap is saved and shows the standby status of the logger
 
 local statusHud = {}
 
@@ -12,6 +11,8 @@ local _logger = nil
 local _blinkTimer = 0
 local _blinkOn = true
 local _blinkPeriod = 0.5  -- seconds per half-cycle (total cycle = 1s)
+
+local OSpreciseClock = os.preciseClock
 
 local IMG_BG = "apps/lua/apex/assets/img/hud_bg.png"
 local IMG_DESIGN = "apps/lua/apex/assets/img/design.png"
@@ -124,14 +125,21 @@ function statusHud.main(dt)
     
     local logDotColor
     local logLabelColor
-    if logging then
-        logDotColor = C.GREEN
+    
+    local lapSavedAt = _app.lapSavedAt
+    local lapJustSaved = lapSavedAt and (OSpreciseClock() - lapSavedAt < 2.0)
+
+    if lapJustSaved then
+        logDotColor   = _blinkOn and C.GREEN or C.GREEN_DIM
+        logLabelColor = C.LABEL
+    elseif logging then
+        logDotColor   = C.GREEN
         logLabelColor = C.LABEL
     elseif appEnabled then
-        logDotColor = _blinkOn and C.YELLOW or C.GREY
+        logDotColor   = C.YELLOW
         logLabelColor = C.LABEL
     else
-        logDotColor = C.GREY
+        logDotColor   = C.GREY
         logLabelColor = C.LABEL_DIM
     end
     ui.drawCircleFilled(logDotP, dotRadius, logDotColor, 16)
