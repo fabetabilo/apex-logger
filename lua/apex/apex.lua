@@ -227,6 +227,35 @@ end
 initApp()
 
 
+-- Extended Controls Bindings ====================================================================
+-- ac.ControlButton IDs MUST match the section names declared in ext_app_controls.ini
+-- prefixing with the app's name (appMain.name) we ensures IDs are unique across all apps
+local _ctrlToggleLog = ac.ControlButton(
+    appMain.name .. "_ToggleLog_button",
+    ui.ControlButtonControlFlags.NoHoldSwitch,
+    { hold = false }
+)
+_ctrlToggleLog:onPressed(function()
+    appMain.settings.enable = not appMain.settings.enable
+    if not appMain.settings.enable and appLogger and appLogger.logging then
+        -- save if valid, discard if not
+        appLogger:stop({ console = true, toast = true })
+    end
+    appMain.saveSettings()
+end)
+
+local _ctrlToggleUdp = ac.ControlButton(
+    appMain.name .. "_ToggleUdp_button",
+    ui.ControlButtonControlFlags.NoHoldSwitch,
+    { hold = false }
+)
+_ctrlToggleUdp:onPressed(function()
+    appMain.settings.udpEnable = not appMain.settings.udpEnable
+    udpSender.configure(appMain.settings)  -- apply change immediately
+    appMain.saveSettings()
+end)
+
+
 -- ============================================================================
 -- AC functions
 -- ============================================================================

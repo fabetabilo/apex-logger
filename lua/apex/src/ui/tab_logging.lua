@@ -36,7 +36,8 @@ tabLogging.draw = function()
     if ui.checkbox("LOG", appState.settings.enable) then
         appState.settings.enable = not appState.settings.enable
         if not appState.settings.enable and appLogger and appLogger.logging then
-            appLogger:cancelStint()
+            -- save if valid, discard if not
+            appLogger:stop({ console = true, toast = true })
         end
         appState.saveSettings()
     end
