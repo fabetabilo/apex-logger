@@ -134,6 +134,51 @@ tabSettings.draw = function()
     ui.offsetCursorY(5)
     ui.separator()
     
+    -- Channel group selection
+    ui.text("Channel Groups")
+    ui.offsetCursorY(5)
+
+    local cg = appState.settings.channelGroups
+    if cg then
+        if ui.checkbox("Environmental data", cg["1"]) then
+            cg["1"] = not cg["1"]
+            appState.saveSettings()
+            if appLogger then
+                appLogger:setDatarates()
+            end
+        end
+        appUI.tooltip("1 Hz: fuel level, temperatures, grip, damage, modes")
+        
+        if ui.checkbox("Tyres, aero, brakes", cg["10"]) then
+            cg["10"] = not cg["10"]
+            appState.saveSettings()
+            if appLogger then
+                appLogger:setDatarates()
+            end
+        end
+        appUI.tooltip("10 Hz: Tyre pressures, temperatures, aero loads, brake temps")
+        
+        if ui.checkbox("Inputs and dynamics", cg["30"]) then
+            cg["30"] = not cg["30"]
+            appState.saveSettings()
+            if appLogger then
+                appLogger:setDatarates()
+            end
+        end
+        appUI.tooltip("30 Hz: Throttle, brake, steer, speed, position, tyre forces")
+        
+        if ui.checkbox("Suspension, FFB, camber", cg["user"]) then
+            cg["user"] = not cg["user"]
+            appState.saveSettings()
+            if appLogger then
+                appLogger:setDatarates()
+            end
+        end
+        appUI.tooltip(tostring(appState.settings.dataRate) .. " Hz: Suspension travel, dampers, camber, toe, FFB, G-forces")
+    end
+    
+    ui.offsetCursorY(5)
+    ui.separator()
 
     -- MODE options
     ui.text("Mode")

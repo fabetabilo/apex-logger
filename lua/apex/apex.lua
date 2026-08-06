@@ -81,6 +81,12 @@ local defaultSettings = {
     dataRate        = 50,
     autoLoggingOffRace = false,
     forceRaceMode   = false,
+    channelGroups = {
+        ["1"] = true,
+        ["10"] = true,
+        ["30"] = true,
+        ["user"] = true,
+    },
     udpEnable = false,
     udpHost   = '127.0.0.1',
     udpPort   = 9996,

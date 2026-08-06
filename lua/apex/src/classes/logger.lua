@@ -22,7 +22,7 @@ ApexLogger = class('ApexLogger', class.NoInitialize)
 
 -- CHANNELS metadata ==================================================================================================================================
 
--- Note that channel groups are organized in channelsPreOrder tables for future selective enabling or disabling via app ui buttons (hopefully)
+-- Note that channel groups are organized in channelsPreOrder tables for future selective enabling or disabling via app ui buttons
 -- Recollect and records in-real-time car physics data at multiple simultaneous frequencies. Each rate group is independently sampled 
 -- and stored per-lap as .csv file.
 --      1 Hz: environmental data such as fuel, temps, grip, damage and modes
@@ -321,10 +321,21 @@ function ApexLogger:setDatarates()
     local rates = {1, 10, 30, self.currentDataRate}
     self.datarates = {}
     for _, r in pairs(rates) do
+        local groupKey
+        if r == 1 then
+            groupKey = "1"
+        elseif r == 10 then
+            groupKey = "10"
+        elseif r == 30 then
+            groupKey = "30"
+        else
+            groupKey = "user"
+        end
         self.datarates[toSTR(r)] = {
             ref     = "#" .. r .. "#",
             delay   = (1 / r),
             lastUpdt = OSpreciseClock(),
+            groupKey = groupKey, -- pre-calculated; read in O(1) per tick
         }
     end
     -- slight offset to prevent aliasing at max rate
@@ -524,10 +535,13 @@ end
 --- Check which rate groups need updating this tick
 function ApexLogger:shouldUpdateChannels(dt)
     local t = OSpreciseClock()
+    local groups = self.app.settings.channelGroups
     for rate, data in pairs(self.datarates) do
-        if t - data.lastUpdt >= data.delay then
-            data.lastUpdt = t
-            self:updateChannels(toNUM(rate))
+        if not (groups and groups[data.groupKey] == false) then
+            if t - data.lastUpdt >= data.delay then
+                data.lastUpdt = t
+                self:updateChannels(toNUM(rate))
+            end
         end
     end
 end
@@ -887,7 +901,20 @@ function ApexLogger:step(dt)
         end
     end
 
+    -- Hotlap fix: enable logger on late start (when on track)
+    if not self.logging and self.stint.carOnTrack and self.app.settings.enable and not self.stint.noRestart then
+        self.stint.startTime = SIM.sessionTimeLeft + CAR.lapTimeMs
+        self.stint.prevLapCount = CAR.lapCount
+        self:start()
+    end
+
     -- Hotlap first-lap detection:
+    if self.LOG == false then
+        if self.app.settings.udpEnable then
+            self:shouldUpdateChannels()
+        end
+        return
+    end
     if self.app.spawnStart == 'HOTLAP_START' and CAR.lapCount == 0 then
         if not self.stint.hotlapStarted and CAR.lapTimeMs > 0 and CAR.lapTimeMs < 50 then
             self.stint.hotlapStarted = true
