@@ -173,7 +173,7 @@ tabSettings.draw = function()
             cg.dyn = not (cg.dyn ~= false)
             appState.saveSettings()
         end
-        appUI.tooltip("Drivetrain info: torque, power, speed and track position (spline)")
+        appUI.tooltip("Drivetrain info: torque, power and speed")
 
         if ui.checkbox("Ext. Electronics##cg_ext_elec", cg.ext_elec ~= false) then
             cg.ext_elec = not (cg.ext_elec ~= false)
@@ -204,7 +204,7 @@ tabSettings.draw = function()
             cg.input = not (cg.input ~= false)
             appState.saveSettings()
         end
-        appUI.tooltip("Throttle, brake, steer, clutch, gear, rpm, speed, lap live data, brake torques, turbo")
+        appUI.tooltip("Throttle, brake, steer, clutch, gear, rpm, speed, track live pos, lap live data, brake torques, turbo")
         
         if ui.checkbox("GPS##cg_gps", cg.gps ~= false) then
             cg.gps = not (cg.gps ~= false)
@@ -216,7 +216,7 @@ tabSettings.draw = function()
             cg.tires_dyn = not (cg.tires_dyn ~= false)
             appState.saveSettings()
         end
-        appUI.tooltip("Wheel angular speeds, nd-slip, tire loads, loaded radius, slip angle & ratio, lateral & longitudinal forces")
+        appUI.tooltip("Wheel angular speeds, tire loads, loaded radius, tire slip angle & ratio, lateral & longitudinal forces")
         
         if ui.checkbox("G-Force##cg_gforce", cg.gforce ~= false) then
             cg.gforce = not (cg.gforce ~= false)

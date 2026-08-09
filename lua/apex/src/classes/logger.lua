@@ -117,7 +117,6 @@ ApexLogger.channelsPreOrder["tires"] = {
 }
 
 ApexLogger.channelsPreOrder["dyn"] = {
-    "posnorm",
     "numtiresout",
     "drivetrainTorque",
     "drivetrainPower",
@@ -152,6 +151,7 @@ ApexLogger.channelsPreOrder["input"] = {
     "absactive",
     "tcactive",
     "speed",
+    "posnorm",
     "laptime",
     "lapdistance",
     "lapcount",
@@ -168,6 +168,7 @@ ApexLogger.channelsPreOrder["input"] = {
     "brakeTorqueFR",
     "brakeTorqueRL",
     "brakeTorqueRR",
+    
     "turboboost",
 }
 
@@ -235,20 +236,24 @@ ApexLogger.channelsPreOrder["susp"] = {
     "rideheightfront",
     "rideheightrear",
     "cgheight",
+
     "susptravelfl",
     "susptravelfr",
     "susptravelrl",
     "susptravelrr",
+    
     "tirealignntrqfl",
     "tirealignntrqfr",
     "tirealignntrqrl",
     "tirealignntrqrr",
+    
     "damperTravelFL",
     "damperTravelFR",
     "damperTravelRL",
     "damperTravelRR",
     "damperTravelHF",
     "damperTravelHR",
+    
     "caster",
     "camberfl",
     "camberfr",
@@ -666,7 +671,6 @@ function ApexLogger:updateChannels(groupId, rate)
     elseif groupId == "dyn" then
         lineTable = {
             "#dyn#", ts,
-            CAR.splinePosition,
             CAR.wheelsOutside,
             CAR.drivetrainTorque,
             CAR.drivetrainPower,
@@ -710,6 +714,7 @@ function ApexLogger:updateChannels(groupId, rate)
             CAR.absInAction and 1 or 0,
             CAR.tractionControlInAction and 1 or 0,
             CAR.speedKmh,
+            CAR.splinePosition,
             CAR.lapTimeMs,
             CAR.drivenInRace,
             CAR.lapCount,
