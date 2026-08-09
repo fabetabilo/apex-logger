@@ -125,7 +125,7 @@ tabSettings.draw = function()
 
     drawRateCombo("##rateMain", appState.settings.dataRate, function(rate)
         appState.settings.dataRate = rate
-        if appLogger then appLogger:setDatarates() end
+        if appLogger then appLogger:setRates() end
     end)
     ui.sameLine()
     ui.text("Rate")
@@ -140,41 +140,103 @@ tabSettings.draw = function()
 
     local cg = appState.settings.channelGroups
     if cg then
-        if ui.checkbox("Environmental data", cg["1"]) then
-            cg["1"] = not cg["1"]
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+        ui.text("1 Hz")
+        ui.popStyleColor()
+        ui.indent(12)
+        if ui.checkbox("Session##cg_session", cg.session ~= false) then
+            cg.session = not (cg.session ~= false)
             appState.saveSettings()
-            if appLogger then
-                appLogger:setDatarates()
-            end
         end
-        appUI.tooltip("1 Hz: fuel level, temperatures, grip, damage, modes")
+        appUI.tooltip("Ambient conditions: air, road temp, grip, wind, weather and session flags")
         
-        if ui.checkbox("Tyres, aero, brakes", cg["10"]) then
-            cg["10"] = not cg["10"]
+        if ui.checkbox("Car Info##cg_car_info", cg.car_info ~= false) then
+            cg.car_info = not (cg.car_info ~= false)
             appState.saveSettings()
-            if appLogger then
-                appLogger:setDatarates()
-            end
         end
-        appUI.tooltip("10 Hz: Tyre pressures, temperatures, aero loads, brake temps")
+        appUI.tooltip("Fuel, ABS, TC modes, tire wear, damage, engine, gearbox health, temps")
+        ui.unindent(12)
         
-        if ui.checkbox("Inputs and dynamics", cg["30"]) then
-            cg["30"] = not cg["30"]
-            appState.saveSettings()
-            if appLogger then
-                appLogger:setDatarates()
-            end
-        end
-        appUI.tooltip("30 Hz: Throttle, brake, steer, speed, position, tyre forces")
         
-        if ui.checkbox("Suspension, FFB, camber", cg["user"]) then
-            cg["user"] = not cg["user"]
+        ui.offsetCursorY(3)
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+        ui.text("10 Hz")
+        ui.popStyleColor()
+        ui.indent(12)
+        if ui.checkbox("Tires & Brakes##cg_tires", cg.tires ~= false) then
+            cg.tires = not (cg.tires ~= false)
             appState.saveSettings()
-            if appLogger then
-                appLogger:setDatarates()
-            end
         end
-        appUI.tooltip(tostring(appState.settings.dataRate) .. " Hz: Suspension travel, dampers, camber, toe, FFB, G-forces")
+        appUI.tooltip("Tire temps, pressures, grain, blisters and brake temps")
+        
+        if ui.checkbox("Car Dynamics##cg_dyn", cg.dyn ~= false) then
+            cg.dyn = not (cg.dyn ~= false)
+            appState.saveSettings()
+        end
+        appUI.tooltip("Drivetrain info: torque, power, speed and track position (spline)")
+
+        if ui.checkbox("Ext. Electronics##cg_ext_elec", cg.ext_elec ~= false) then
+            cg.ext_elec = not (cg.ext_elec ~= false)
+            appState.saveSettings()
+        end
+        appUI.tooltip("Extended Electronics: DRS, ERS/KERS deploy, charge and input info")
+
+        if ui.checkbox("Aerodynamic##cg_aero", cg.aero ~= false) then
+            cg.aero = not (cg.aero ~= false)
+            appState.saveSettings()
+        end
+        appUI.tooltip("Aero drag, front and rear downforce")
+         
+        if ui.checkbox("Sim Info##cg_sim_info", cg.sim_info ~= false) then
+            cg.sim_info = not (cg.sim_info ~= false)
+            appState.saveSettings()
+        end
+        appUI.tooltip("Sim health info: FFB, FPS, physics late, CPU time")
+        ui.unindent(12)
+        
+        
+        ui.offsetCursorY(3)
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+        ui.text("30 Hz")
+        ui.popStyleColor()
+        ui.indent(12)
+        if ui.checkbox("Inputs##cg_input", cg.input ~= false) then
+            cg.input = not (cg.input ~= false)
+            appState.saveSettings()
+        end
+        appUI.tooltip("Throttle, brake, steer, clutch, gear, rpm, speed, lap live data, brake torques, turbo")
+        
+        if ui.checkbox("GPS##cg_gps", cg.gps ~= false) then
+            cg.gps = not (cg.gps ~= false)
+            appState.saveSettings()
+        end
+        appUI.tooltip("World position, local velocity, pitch, roll, yaw rates and angles, and car heading")
+        
+        if ui.checkbox("Tire Dynamics##cg_tires_dyn", cg.tires_dyn ~= false) then
+            cg.tires_dyn = not (cg.tires_dyn ~= false)
+            appState.saveSettings()
+        end
+        appUI.tooltip("Wheel angular speeds, nd-slip, tire loads, loaded radius, slip angle & ratio, lateral & longitudinal forces")
+        
+        if ui.checkbox("G-Force##cg_gforce", cg.gforce ~= false) then
+            cg.gforce = not (cg.gforce ~= false)
+            appState.saveSettings()
+        end
+        appUI.tooltip("CG accelerations: lateral, longitudinal, vertical")
+        ui.unindent(12)
+        
+        -- user customizable Hz
+        ui.offsetCursorY(3)
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+        ui.text(tostring(appState.settings.dataRate) .. " Hz (Customizable)")
+        ui.popStyleColor()
+        ui.indent(12)
+        if ui.checkbox("Suspension##cg_susp", cg.susp ~= false) then
+            cg.susp = not (cg.susp ~= false)
+            appState.saveSettings()
+        end
+        appUI.tooltip("Ride heights (front and rear), CG height, suspension travel, aligning torques, dampers, caster, camber and toe")
+        ui.unindent(12)
     end
     
     ui.offsetCursorY(5)

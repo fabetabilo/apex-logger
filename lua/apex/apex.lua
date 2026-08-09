@@ -82,10 +82,18 @@ local defaultSettings = {
     autoLoggingOffRace = false,
     forceRaceMode   = false,
     channelGroups = {
-        ["1"] = true,
-        ["10"] = true,
-        ["30"] = true,
-        ["user"] = true,
+        session    = true,
+        car_info   = true,
+        tires      = true,
+        dyn        = true,
+        ext_elec   = true,
+        aero       = true,
+        sim_info   = true,
+        input      = true,
+        gps        = true,
+        tires_dyn  = true,
+        gforce     = true,
+        susp       = true,
     },
     udpEnable = false,
     udpHost   = '127.0.0.1',
@@ -320,7 +328,7 @@ ac.onSessionStart(function(sessionType, sessionIndex)
 
     if appLogger then
         appLogger:resetStint()
-        appLogger:setDatarates()
+        appLogger:setRates()
     end
 end)
 

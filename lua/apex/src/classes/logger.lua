@@ -22,25 +22,26 @@ ApexLogger = class('ApexLogger', class.NoInitialize)
 
 -- CHANNELS metadata ==================================================================================================================================
 
--- Note that channel groups are organized in channelsPreOrder tables for future selective enabling or disabling via app ui buttons
 -- Recollect and records in-real-time car physics data at multiple simultaneous frequencies. Each rate group is independently sampled 
 -- and stored per-lap as .csv file.
---      1 Hz: environmental data such as fuel, temps, grip, damage and modes
---      10 Hz: tyre data, aero, brakes, performance metrics
---      30 Hz: inputs, speed, position, forces, suspension
---      user Hz (user configured): high-frequency data (camber, toe, dampers, FFB, accel)
+-- Rate dispatch: the logger checks timestamps once per rate bucket, then iterates all enabled groups within that bucket
+-- minimizing overhead to 4 timestamp checks per tick.
 
 ApexLogger.channelsPreOrder = {}
-ApexLogger.channelsPreOrder["1"] = {
-    "lastsectortime",
-    "fuellevel",
+ApexLogger.channelsPreOrder["session"] = {
     "airtemp",
     "airdens",
     "roadtemp",
     "roadgrip",
     "winddir",
-    "winspeed",
+    "windspeed",
     "raceflagtype",
+    "weatherType",
+}
+
+ApexLogger.channelsPreOrder["car_info"] = {
+    "lastsectortime",
+    "fuellevel",
     "brakebias",
     "invalidlap",
     "ebsetting",
@@ -70,20 +71,10 @@ ApexLogger.channelsPreOrder["1"] = {
     "tcMode",
     "tc2Mode",
     "fuelMap",
-    "weatherType",
+    "relplankwear",
 }
 
-ApexLogger.channelsPreOrder["10"] = {
-    "posnorm",
-    "numtiresout",
-    "drsavail",
-    "drsact",
-    "erscharging",
-    "kerscharge",
-    "kersdeployed",
-    "relplankwear",
-    "mark",
-    
+ApexLogger.channelsPreOrder["tires"] = {
     "tirepressfl",
     "tirepressfr",
     "tirepressrl",
@@ -123,21 +114,40 @@ ApexLogger.channelsPreOrder["10"] = {
     "braketempfr",
     "braketemprl",
     "braketemprr",
-    
+}
+
+ApexLogger.channelsPreOrder["dyn"] = {
+    "posnorm",
+    "numtiresout",
     "drivetrainTorque",
     "drivetrainPower",
-    "carHeading",
-    "caster",
+    "drivetrainspeed",
+}
+
+ApexLogger.channelsPreOrder["ext_elec"] = {
+    "drsavail",
+    "drsact",
+    "erscharging",
+    "kersdeployed",
+    "kersinput",
+    "kerscharge",
+}
+
+ApexLogger.channelsPreOrder["aero"] = {
     "aerodrag",
     "aeroDownforceFront",
     "aeroDownforceRear",
+}
+
+ApexLogger.channelsPreOrder["sim_info"] = {
     "ffbPure",
+    "ffbFinal",
     "fps",
     "physicsLate",
     "cpuTime",
 }
 
-ApexLogger.channelsPreOrder["30"] = {
+ApexLogger.channelsPreOrder["input"] = {
     "clutch",
     "absactive",
     "tcactive",
@@ -145,11 +155,12 @@ ApexLogger.channelsPreOrder["30"] = {
     "laptime",
     "lapdistance",
     "lapcount",
-    
+
     "throttle",
     "brake",
     "handbrake",
     "steerAngle",
+    "steerTorque",
     "gear",
     "rpm",
     
@@ -157,35 +168,35 @@ ApexLogger.channelsPreOrder["30"] = {
     "brakeTorqueFR",
     "brakeTorqueRL",
     "brakeTorqueRR",
-    "ndslipfl",
-    "ndslipfr",
-    "ndsliprl",
-    "ndsliprr",
-    
-    "kersinput",
     "turboboost",
-    
-    "wheelspeedFL",
-    "wheelspeedFR",
-    "wheelspeedRL",
-    "wheelspeedRR",
+}
+
+ApexLogger.channelsPreOrder["gps"] = {
     "posx",
     "posy",
     "posz",
-    "drivetrainspeed",
+    
     "velx",
     "vely",
     "velz",
-    
+
+    "carHeading",
     "pitchrate",
     "pitchangle",
     "rollrate",
     "rollangle",
     "yawrate",
-    "cgheight",
-    "rideheightfront",
-    "rideheightrear",
-    
+}
+
+ApexLogger.channelsPreOrder["tires_dyn"] = {
+    "wheelspeedFL",
+    "wheelspeedFR",
+    "wheelspeedRL",
+    "wheelspeedRR",
+    "ndslipfl",
+    "ndslipfr",
+    "ndsliprl",
+    "ndsliprr",
     "tireloadfl",
     "tireloadfr",
     "tireloadrl",
@@ -214,25 +225,16 @@ ApexLogger.channelsPreOrder["30"] = {
     "tirelatforcerr",
 }
 
--- user configured rate
-ApexLogger.channelsPreOrder["user"] = {
-    "sessionTimeLeft",
-    "steerTorque",
-    "ffbFinal",
-    
-    "camberfl",
-    "camberfr",
-    "camberrl",
-    "camberrr",
-    "toefl",
-    "toefr",
-    "toerl",
-    "toerr",
-
+ApexLogger.channelsPreOrder["gforce"] = {
     "cgaccellat",
     "cgaccellong",
     "cgaccelvert",
+}
 
+ApexLogger.channelsPreOrder["susp"] = {
+    "rideheightfront",
+    "rideheightrear",
+    "cgheight",
     "susptravelfl",
     "susptravelfr",
     "susptravelrl",
@@ -247,6 +249,15 @@ ApexLogger.channelsPreOrder["user"] = {
     "damperTravelRR",
     "damperTravelHF",
     "damperTravelHR",
+    "caster",
+    "camberfl",
+    "camberfr",
+    "camberrl",
+    "camberrr",
+    "toefl",
+    "toefr",
+    "toerl",
+    "toerr",
 }
 
 
@@ -275,8 +286,8 @@ function ApexLogger:initialize()
     }
     
     self.currentDataRate = 30
-    self.datarates = {}
-    self:setDatarates()
+    self.rates = {}
+    self:setRates()
     
     self:resetStint()
     self.stint.noRestart = false
@@ -314,41 +325,43 @@ end
 
 -- Data rate management ===========================================================
 
---- Sets channel sampling rates
-function ApexLogger:setDatarates()
+--- Build the rates table, called on init and on session start
+function ApexLogger:setRates()
     self.currentDataRate = self.app.settings.dataRate
-    
-    local rates = {1, 10, 30, self.currentDataRate}
-    self.datarates = {}
-    for _, r in pairs(rates) do
-        local groupKey
-        if r == 1 then
-            groupKey = "1"
-        elseif r == 10 then
-            groupKey = "10"
-        elseif r == 30 then
-            groupKey = "30"
-        else
-            groupKey = "user"
+    local userRate = self.currentDataRate
+    local t = OSpreciseClock()
+
+    self.rates = {
+        [1] = { delay = 1, lastUpdt = t, groups = {"session", "car_info"} },
+        [10] = { delay = 0.1, lastUpdt = t, groups = {"tires", "dyn", "ext_elec", "aero", "sim_info"} },
+        [30] = { delay = 1/30, lastUpdt = t, groups = {"input", "gps", "tires_dyn", "gforce"} },
+        [userRate] = { delay = 1/userRate - 0.007, lastUpdt = t, groups = {"susp"} },
+    }
+    -- If userRate collides with a fixed rate (e.g. 30), merge groups rather than overwrite.
+    -- In practice DATA_RATES starts at 25 so this only matters for edge cases.
+    if userRate == 1 then
+        for _, g in ipairs({"susp"}) do
+            table.insert(self.rates[1].groups, g)
         end
-        self.datarates[toSTR(r)] = {
-            ref     = "#" .. r .. "#",
-            delay   = (1 / r),
-            lastUpdt = OSpreciseClock(),
-            groupKey = groupKey, -- pre-calculated; read in O(1) per tick
-        }
+        self.rates[userRate] = nil  -- remove duplicate key
+    elseif userRate == 10 then
+        for _, g in ipairs({"susp"}) do
+            table.insert(self.rates[10].groups, g)
+        end
+        self.rates[userRate] = nil
+    elseif userRate == 30 then
+        for _, g in ipairs({"susp"}) do
+            table.insert(self.rates[30].groups, g)
+        end
+        self.rates[userRate] = nil
     end
-    -- slight offset to prevent aliasing at max rate
-    self.datarates[toSTR(self.currentDataRate)].delay =
-        self.datarates[toSTR(self.currentDataRate)].delay - 0.007
 end
 
 function ApexLogger:setChannelOrder()
     self.LOG.channelOrder = {}
-    self.LOG.channelOrder["1"]  = ApexLogger.channelsPreOrder["1"]
-    self.LOG.channelOrder["10"] = ApexLogger.channelsPreOrder["10"]
-    self.LOG.channelOrder["30"] = ApexLogger.channelsPreOrder["30"]
-    self.LOG.channelOrder[toSTR(self.currentDataRate)] = ApexLogger.channelsPreOrder["user"]
+    for _, g in ipairs({"session", "car_info", "tires", "dyn", "ext_elec", "aero", "sim_info", "input", "gps", "tires_dyn", "gforce", "susp"}) do
+        self.LOG.channelOrder[g] = ApexLogger.channelsPreOrder[g]
+    end
 end
 
 
@@ -416,7 +429,7 @@ end
 
 --- start a new logging stint
 function ApexLogger:start()
-    self:setDatarates()
+    self:setRates()
     local date = OSdate("%d/%m/%Y")
     local time = OSdate("%X")
     local datetime = date .. " " .. time
@@ -454,8 +467,8 @@ function ApexLogger:start()
     
     self.logging = true
     self:newLap()
-    for _, data in pairs(self.datarates) do
-        data.lastUpdt = 0
+    for _, rateData in pairs(self.rates) do
+        rateData.lastUpdt = 0
     end
     
     --- toast notification when app window is completely hidden (very handy)
@@ -536,29 +549,30 @@ end
 function ApexLogger:shouldUpdateChannels(dt)
     local t = OSpreciseClock()
     local groups = self.app.settings.channelGroups
-    for rate, data in pairs(self.datarates) do
-        if not (groups and groups[data.groupKey] == false) then
-            if t - data.lastUpdt >= data.delay then
-                data.lastUpdt = t
-                self:updateChannels(toNUM(rate))
+    --- One timestamp check per rate (4 checks max), then iterate groups within.
+    for rate, rateData in pairs(self.rates) do
+        if t - rateData.lastUpdt >= rateData.delay then
+            rateData.lastUpdt = t
+            for _, groupId in ipairs(rateData.groups) do
+                if not (groups and groups[groupId] == false) then
+                    self:updateChannels(groupId, rate)
+                end
             end
         end
     end
 end
 
---- Record one sample of all channels at the given rate
---- example line = "#rate#;sessionTimeLeft;val1;val2;..."
----@param rate number sampling rate (1, 10, 30, or user)
-function ApexLogger:updateChannels(rate)
+--- Record one sample of all channels in the given group.
+--- Line format: "#groupId#;sessionTimeLeft;val1;val2;..."
+---@param groupId string  the group identifier
+---@param rate    number  numeric rate this group runs at
+function ApexLogger:updateChannels(groupId, rate)
     local lineTable
+    local ts = SIM.sessionTimeLeft
 
-    if rate == 1 then
+    if groupId == "session" then
         lineTable = {
-            self.datarates[toSTR(rate)].ref,
-            SIM.sessionTimeLeft,
-            
-            CAR.currentSector == 0 and CAR.lastSplits[#CAR.lastSplits - 1] or CAR.previousSectorTime,
-            CAR.fuel,
+            "#session#", ts,
             SIM.ambientTemperature,
             CPHYS.airDensity > 0 and CPHYS.airDensity or 1.225 * Mexp(-CAR.altitude / 8500),
             SIM.roadTemperature,
@@ -566,6 +580,14 @@ function ApexLogger:updateChannels(rate)
             SIM.windDirectionDeg,
             SIM.windSpeedKmh,
             SIM.raceFlagType,
+            SIM.weatherType,
+        }
+
+    elseif groupId == "car_info" then
+        lineTable = {
+            "#car_info#", ts,
+            CAR.currentSector == 0 and CAR.lastSplits[#CAR.lastSplits - 1] or CAR.previousSectorTime,
+            CAR.fuel,
             CAR.brakeBias,
             CAR.isLapValid and 0 or 1,
             CAR.currentEngineBrakeSetting,
@@ -594,26 +616,12 @@ function ApexLogger:updateChannels(rate)
             CAR.tractionControlMode,
             CAR.tractionControl2,
             CAR.fuelMap,
-            SIM.weatherType,
-        }
-    end
-
-    if rate == 10 then
-        self.aero.stepWings(self.app)
-        lineTable = {
-            self.datarates[toSTR(rate)].ref,
-            SIM.sessionTimeLeft,
-            
-            CAR.splinePosition,
-            CAR.wheelsOutside,
-            CAR.drsAvailable and 1 or 0,
-            CAR.drsActive and 1 or 0,
-            CAR.mguhChargingBatteries and 1 or 0,
-            CAR.kersCharge,
-            CAR.kersCurrentKJ,
             CAR.maxRelativePlankWear,
-            0,
-            
+        }
+
+    elseif groupId == "tires" then
+        lineTable = {
+            "#tires#", ts,
             CAR.wheels[0].tyrePressure,
             CAR.wheels[1].tyrePressure,
             CAR.wheels[2].tyrePressure,
@@ -653,26 +661,51 @@ function ApexLogger:updateChannels(rate)
             CAR.wheels[1].discTemperature,
             CAR.wheels[2].discTemperature,
             CAR.wheels[3].discTemperature,
-            
+        }
+
+    elseif groupId == "dyn" then
+        lineTable = {
+            "#dyn#", ts,
+            CAR.splinePosition,
+            CAR.wheelsOutside,
             CAR.drivetrainTorque,
             CAR.drivetrainPower,
-            CAR.compass,
-            CAR.caster,
+            CAR.drivetrainSpeed,
+        }
+
+    elseif groupId == "ext_elec" then
+        lineTable = {
+            "#ext_elec#", ts,
+            CAR.drsAvailable and 1 or 0,
+            CAR.drsActive and 1 or 0,
+            CAR.mguhChargingBatteries and 1 or 0,
+            CAR.kersCurrentKJ,
+            CAR.kersInput,
+            CAR.kersCharge,
+        }
+
+    elseif groupId == "aero" then
+        self.aero.stepWings(self.app)   -- will be called only if aero group is enabled
+        lineTable = {
+            "#aero#", ts,
             self.aero.data.drag,
             self.aero.data.downforceFront,
             self.aero.data.downforceRear,
+        }
+
+    elseif groupId == "sim_info" then
+        lineTable = {
+            "#sim_info#", ts,
             CAR.ffbPure,
+            CAR.ffbFinal,
             SIM.fps,
             SIM.physicsLate,
             SIM.cpuTime,
         }
-    end
-    
-    if rate == 30 then
+
+    elseif groupId == "input" then
         lineTable = {
-            self.datarates[toSTR(rate)].ref,
-            SIM.sessionTimeLeft,
-            
+            "#input#", ts,
             CAR.clutch,
             CAR.absInAction and 1 or 0,
             CAR.tractionControlInAction and 1 or 0,
@@ -685,6 +718,7 @@ function ApexLogger:updateChannels(rate)
             CAR.brake,
             CAR.handbrake,
             CAR.steer,
+            CAR.steerTorque,
             CAR.gear,
             CAR.rpm,
             
@@ -692,36 +726,38 @@ function ApexLogger:updateChannels(rate)
             CPHYS.wheels[1].brakeTorque,
             CPHYS.wheels[2].brakeTorque,
             CPHYS.wheels[3].brakeTorque,
-            CAR.wheels[0].ndSlip,
-            CAR.wheels[1].ndSlip,
-            CAR.wheels[2].ndSlip,
-            CAR.wheels[3].ndSlip,
-
-            CAR.kersInput,
+            
             CAR.turboBoost,
+        }
 
+    elseif groupId == "gps" then
+        lineTable = {
+            "#gps#", ts,
+            CAR.position.x,
+            CAR.position.z,     -- posy (remapped: AC Z -> world Y)
+            CAR.position.y,     -- posz (remapped: AC Y -> world Z)
+            CAR.localVelocity.z,  -- velx
+            CAR.localVelocity.x,  -- vely
+            CAR.localVelocity.y,  -- velz
+            CAR.compass,        -- carHeading
+            CAR.localAngularVelocity.z,  -- pitchrate
+            CAR.look.y,                  -- pitchangle
+            CAR.localAngularVelocity.x,  -- rollrate
+            CAR.side.y,                  -- rollangle
+            CAR.localAngularVelocity.y,  -- yawrate
+        }
+
+    elseif groupId == "tires_dyn" then
+        lineTable = {
+            "#tires_dyn#", ts,
             CAR.wheels[0].angularSpeed,
             CAR.wheels[1].angularSpeed,
             CAR.wheels[2].angularSpeed,
             CAR.wheels[3].angularSpeed,
-
-            CAR.position.x,
-            CAR.position.z,
-            CAR.position.y,
-            CAR.drivetrainSpeed,
-            CAR.localVelocity.z,
-            CAR.localVelocity.x,
-            CAR.localVelocity.y,
-            
-            CAR.localAngularVelocity.z,     -- pitchrate
-            CAR.look.y,                     -- pitchangle
-            CAR.localAngularVelocity.x,     -- rollrate
-            CAR.side.y,                     -- rollangle
-            CAR.localAngularVelocity.y,     -- yawrate
-            CAR.cgHeight,
-            CAR.rideHeight[0],
-            CAR.rideHeight[1],
-
+            CAR.wheels[0].ndSlip,
+            CAR.wheels[1].ndSlip,
+            CAR.wheels[2].ndSlip,
+            CAR.wheels[3].ndSlip,
             CAR.wheels[0].load,
             CAR.wheels[1].load,
             CAR.wheels[2].load,
@@ -749,29 +785,21 @@ function ApexLogger:updateChannels(rate)
             CAR.wheels[2].fy,
             CAR.wheels[3].fy,
         }
-    end
 
-    if rate == self.currentDataRate then
+    elseif groupId == "gforce" then
         lineTable = {
-            self.datarates[toSTR(rate)].ref,
-            SIM.sessionTimeLeft,
-            
-            CAR.steerTorque,
-            CAR.ffbFinal,
-            
-            CAR.wheels[0].camber,
-            CAR.wheels[1].camber,
-            CAR.wheels[2].camber,
-            CAR.wheels[3].camber,
-            CAR.wheels[0].toeIn,
-            CAR.wheels[1].toeIn,
-            CAR.wheels[2].toeIn,
-            CAR.wheels[3].toeIn,
-            
+            "#gforce#", ts,
             CAR.acceleration.x,
             CAR.acceleration.z,
             CAR.acceleration.y,
-            
+        }
+
+    elseif groupId == "susp" then
+        lineTable = {
+            "#susp#", ts,
+            CAR.rideHeight[0],
+            CAR.rideHeight[1],
+            CAR.cgHeight,
             CAR.wheels[0].suspensionTravel,
             CAR.wheels[1].suspensionTravel,
             CAR.wheels[2].suspensionTravel,
@@ -781,17 +809,30 @@ function ApexLogger:updateChannels(rate)
             CAR.wheels[2].mz,
             CAR.wheels[3].mz,
             
-            self.app.pyBuffer.damperTravelFL, self.app.pyBuffer.damperTravelFR,
-            self.app.pyBuffer.damperTravelRL, self.app.pyBuffer.damperTravelRR,
-            self.app.pyBuffer.damperTravelHF, self.app.pyBuffer.damperTravelHR,
+            self.app.pyBuffer.damperTravelFL,
+            self.app.pyBuffer.damperTravelFR,
+            self.app.pyBuffer.damperTravelRL,
+            self.app.pyBuffer.damperTravelRR,
+            self.app.pyBuffer.damperTravelHF,
+            self.app.pyBuffer.damperTravelHR,
+            CAR.caster,
+            CAR.wheels[0].camber,
+            CAR.wheels[1].camber,
+            CAR.wheels[2].camber,
+            CAR.wheels[3].camber,
+            CAR.wheels[0].toeIn,
+            CAR.wheels[1].toeIn,
+            CAR.wheels[2].toeIn,
+            CAR.wheels[3].toeIn,
         }
     end
-    
+    if not lineTable then return end
+
     --- store the line
     if self.logging then
         self.stint.lapTable[#self.stint.lapTable + 1] = Tconcat(lineTable, ";")
     end
-    self.udpSender.send(lineTable, rate)
+    self.udpSender.send(lineTable, groupId, rate)
 end
 
 
