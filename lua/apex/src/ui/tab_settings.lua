@@ -35,7 +35,7 @@ end
 -- Driver management =========================================================
 local function drawDriverCombo()
     -- calculate width for combo so it stretches while leaving room for buttons
-    local buttonSpace = 120 
+    local buttonSpace = 110
     ui.setNextItemWidth(ui.availableSpaceX() - buttonSpace)
     
     ui.combo("##driverSel", appState.settings.driver, function()
@@ -86,6 +86,8 @@ end
 -- ============================================================================
 
 tabSettings.draw = function()
+    
+    ui.offsetCursorY(5)
     ui.pushStyleVar(ui.StyleVar.IndentSpacing, 12)
     
     -- Driver information
@@ -93,55 +95,30 @@ tabSettings.draw = function()
     ui.offsetCursorY(5)
     
     drawDriverCombo()
-    
+
+    -- Shortcut buttons
+    ui.offsetCursorY(15)
+    ui.text("Settings Folder")
     ui.offsetCursorY(5)
-    ui.separator()
-    
-    -- PYTHON buffer information
-    ui.text("Python Buffer")
-    ui.offsetCursorY(5)
-    
-    ui.text("Status")
-    ui.sameLine(80)
-    
-    if appState.pyAppLoaded then
-        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREEN)
-        ui.text("active")
-        ui.popStyleColor()
-        appUI.tooltip("Python app is active")
-    else
-        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.ORANGE)
-        ui.text("inactive")
-        ui.popStyleColor()
-        appUI.tooltip("Python app is inactive")
+    if ui.button("Open settings file##openSettings", vec2(ui.availableSpaceX(), 22)) then
+        os.openInExplorer(appState.settingsPath)
+    end
+    if ui.itemHovered() then
+        appUI.tooltip("Open JSON settings file")
     end
     
-    ui.offsetCursorY(5)
-    ui.separator()
-    
-    -- Data sampling rates information
-    ui.text("Data Sampling")
-    ui.offsetCursorY(5)
-
-    drawRateCombo("##rateMain", appState.settings.dataRate, function(rate)
-        appState.settings.dataRate = rate
-        if appLogger then appLogger:setRates() end
-    end)
-    ui.sameLine()
-    ui.text("Rate")
-    appUI.tooltip("Choose max data sampling rate")
-
-    ui.offsetCursorY(5)
-    ui.separator()
-    
     -- Channel group selection
+    ui.offsetCursorY(15)
     ui.text("Channel Groups")
     ui.offsetCursorY(5)
 
     local cg = appState.settings.channelGroups
     if cg then
+        -- ── LEFT COLUMN: 1 Hz & 10 Hz ─────────────────────────────────────
+        ui.beginGroup()
         ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
         ui.text("1 Hz")
+        ui.offsetCursorY(5)
         ui.popStyleColor()
         ui.indent(12)
         if ui.checkbox("Session##cg_session", cg.session ~= false) then
@@ -157,10 +134,10 @@ tabSettings.draw = function()
         appUI.tooltip("Fuel, ABS, TC modes, tire wear, damage, engine, gearbox health, temps")
         ui.unindent(12)
         
-        
         ui.offsetCursorY(3)
         ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
         ui.text("10 Hz")
+        ui.offsetCursorY(5)
         ui.popStyleColor()
         ui.indent(12)
         if ui.checkbox("Tires & Brakes##cg_tires", cg.tires ~= false) then
@@ -193,11 +170,14 @@ tabSettings.draw = function()
         end
         appUI.tooltip("Sim health info: FFB, FPS, physics late, CPU time")
         ui.unindent(12)
+        ui.endGroup()
         
-        
-        ui.offsetCursorY(3)
+        -- ── RIGHT COLUMN: 30 Hz & Customizable Hz ─────────────────────────
+        ui.sameLine(0, 16)
+        ui.beginGroup()
         ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
         ui.text("30 Hz")
+        ui.offsetCursorY(5)
         ui.popStyleColor()
         ui.indent(12)
         if ui.checkbox("Inputs##cg_input", cg.input ~= false) then
@@ -228,7 +208,8 @@ tabSettings.draw = function()
         -- user customizable Hz
         ui.offsetCursorY(3)
         ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
-        ui.text(tostring(appState.settings.dataRate) .. " Hz (Customizable)")
+        ui.text(tostring(appState.settings.dataRate) .. " Hz")
+        ui.offsetCursorY(5)
         ui.popStyleColor()
         ui.indent(12)
         if ui.checkbox("Suspension##cg_susp", cg.susp ~= false) then
@@ -237,15 +218,28 @@ tabSettings.draw = function()
         end
         appUI.tooltip("Ride heights (front and rear), CG height, suspension travel, aligning torques, dampers, caster, camber and toe")
         ui.unindent(12)
+        ui.endGroup()
     end
-    
+
+    -- Data sampling rates information
+    ui.offsetCursorY(15)
+    ui.text("Custom Channels")
     ui.offsetCursorY(5)
-    ui.separator()
+
+    drawRateCombo("##rateMain", appState.settings.dataRate, function(rate)
+        appState.settings.dataRate = rate
+        if appLogger then appLogger:setRates() end
+    end)
+    ui.sameLine()
+    ui.text("Suspension Rate")
+    appUI.tooltip("Choose max data sampling rate for suspension channel")
+    ui.offsetCursorY(5)
 
     -- MODE options
-    ui.text("Mode")
+    ui.offsetCursorY(15)
+    ui.text("LOG Mode")
     ui.offsetCursorY(5)
-
+    ui.indent(12)
     if ui.checkbox("Auto off logging", appState.settings.autoLoggingOffRace) then
         appState.settings.autoLoggingOffRace = not appState.settings.autoLoggingOffRace
         appState.saveSettings()
@@ -259,13 +253,12 @@ tabSettings.draw = function()
         appUI.updateUIlog("Race mode: " .. (appState.settings.forceRaceMode and "active" or "inactive"), appUI.colors.GREY)
     end
     appUI.tooltip("Forcing race mode will always log, no auto-stop in pit, no restart. Stays recording until session end or disabled.")
+    ui.unindent(12)
 
+    ui.offsetCursorY(15)
+    ui.text("TX Mode Settings")
     ui.offsetCursorY(5)
-    ui.separator()
-    
-    ui.text("TX UDP Telemetry")
-    ui.offsetCursorY(5)
-    
+    ui.indent(12)
     ui.setNextItemWidth(120)
     local newHost, hostChanged = ui.inputText("IP Address", appState.settings.udpHost)
     if hostChanged then
@@ -285,17 +278,7 @@ tabSettings.draw = function()
             appLogger.udpSender.configure(appState.settings)
         end
     end
-
-    ui.offsetCursorY(5)
-    ui.separator()
-    
-    -- Shortcut buttons
-    ui.text("Shortcuts")
-    ui.offsetCursorY(5)
-
-    if ui.button("Open settings file##openSettings", vec2(ui.availableSpaceX(), 22)) then
-        os.openInExplorer(appState.settingsPath)
-    end
+    ui.unindent(12)
 
     ui.popStyleVar()
 end

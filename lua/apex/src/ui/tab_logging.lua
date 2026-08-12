@@ -24,6 +24,7 @@ end
 
 tabLogging.draw = function()
     
+    ui.offsetCursorY(5)
     ui.pushStyleVar(ui.StyleVar.IndentSpacing, 12)
     ui.text("Logger Mode")
     ui.offsetCursorY(5)
@@ -71,6 +72,7 @@ tabLogging.draw = function()
     ui.popStyleColor(2)
     appUI.tooltip("Enable live UDP telemetry")
 
+    ui.offsetCursorY(15)
     -- Python companion status and session general info
     if not appState.pyAppLoaded then
         ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.ORANGE)

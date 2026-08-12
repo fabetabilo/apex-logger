@@ -18,8 +18,60 @@ end
 -- ===============================================================
 
 tabData.draw = function()
-    ui.pushStyleVar(ui.StyleVar.IndentSpacing, 12)
 
+    ui.offsetCursorY(5)
+    ui.text("CSP Data")
+    ui.offsetCursorY(5)
+    
+    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREY)
+    ui.text("CSP Aeromap")
+    ui.popStyleColor()
+    
+    ui.sameLine(175)
+
+    if appState.car.hasAeromap then
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREEN)
+        ui.text("Detected")
+    else
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+        ui.text("Not available")
+    end
+    ui.popStyleColor()
+
+    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREY)
+    ui.text("Encrypted aero")
+    ui.popStyleColor()
+    
+    ui.sameLine(175)
+    
+    ui.text(appState.car.aeroEncrypted and "Yes" or "No")
+
+     -- PYTHON buffer information
+    ui.offsetCursorY(15)
+    ui.text("Python Buffer")
+    ui.offsetCursorY(5)
+    
+    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREY)
+    ui.text("Status")
+    ui.popStyleColor()
+
+    ui.sameLine(175)
+    
+    if appState.pyAppLoaded then
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREEN)
+        ui.text("active")
+        ui.popStyleColor()
+        appUI.tooltip("Python app is active")
+    else
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.ORANGE)
+        ui.text("inactive")
+        ui.popStyleColor()
+        appUI.tooltip("Python app is inactive")
+    end
+    
+
+    ui.pushStyleVar(ui.StyleVar.IndentSpacing, 12)
+    ui.offsetCursorY(15)
     ui.text("Laps Folder")
     ui.offsetCursorY(5)
     if ui.button("Open laps folder##openLaps", vec2(ui.availableSpaceX(), 22)) then
@@ -29,6 +81,7 @@ tabData.draw = function()
         appUI.tooltip("Open logged laps folder")
     end
     
+    ui.offsetCursorY(15)
     ui.text("Track Information")
     ui.offsetCursorY(5)
 
@@ -40,10 +93,7 @@ tabData.draw = function()
     
     ui.text(appState.trackLayout or ac.getTrackID())
     
-    ui.offsetCursorY(5)
-    ui.separator()
-    ui.offsetCursorY(5)
-    
+    ui.offsetCursorY(15)
     ui.text("Car Data")
     ui.offsetCursorY(5)
     
@@ -94,35 +144,6 @@ tabData.draw = function()
     
     ui.offsetCursorY(5)
     
-    ui.separator()
-    ui.offsetCursorY(5)
-    ui.text("CSP Data")
-    ui.offsetCursorY(5)
-    
-    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREY)
-    ui.text("CSP Aeromap")
-    ui.popStyleColor()
-    
-    ui.sameLine(175)
-
-    if appState.car.hasAeromap then
-        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREEN)
-        ui.text("Detected")
-    else
-        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
-        ui.text("Not available")
-    end
-    ui.popStyleColor()
-
-    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREY)
-    ui.text("Encrypted aero")
-    ui.popStyleColor()
-    
-    ui.sameLine(175)
-    
-    ui.text(appState.car.aeroEncrypted and "Yes" or "No")
-
-    ui.popStyleVar()
 end
 
 return tabData
