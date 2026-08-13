@@ -92,9 +92,7 @@ uiHelpers.getTitle = function(appState, logger)
     if not appState.settings.enable then
         parts[#parts + 1] = "inactive"
     else
-        local mode = logger and logger.logging and "logging" or "active"
-        local rate = logger and logger.currentDataRate or appState.settings.dataRate
-        parts[#parts + 1] = mode .. " (" .. rate .. "Hz)"
+        parts[#parts + 1] = logger and logger.logging and "logging" or "active"
 
         if CAR.isInPitlane or CAR.isInPit then
             parts[#parts + 1] = "in pit"

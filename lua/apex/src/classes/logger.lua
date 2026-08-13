@@ -406,7 +406,7 @@ function ApexLogger:saveLap(lapIndex, signal)
     if self.LOG == false then return end
 
     local str = Tconcat(self.stint.lapTable, "\n")
-    local lapPath = ac.dirname() .. "\\laps\\lap_" .. lapIndex .. ".csv"
+    local lapPath = ac.dirname() .. "\\laps\\lap_" .. self.LOG.timeTag .. "_" .. lapIndex .. "_" .. self.LOG.driverTag .. ".csv"
     self.LOG.lapFiles[#self.LOG.lapFiles + 1] = lapPath
     self.stint.lapCounter = self.stint.lapCounter + 1
     io.saveAsync(lapPath, str)
@@ -440,11 +440,16 @@ function ApexLogger:start()
     local datetime = date .. " " .. time
     local simDateObj = OSdate("!*t", SIM.timestamp)
     local simDateTime = simDateObj.day .. "/" .. simDateObj.month .. "/" .. simDateObj.year .. " " .. simDateObj.hour .. ":" .. simDateObj.min .. ":" .. simDateObj.sec
+    local timeTag = OSdate("%H%M%S")
+    local driverTag = self.helpers.sanitizeForPath(self.app.settings.driver)
     
     self.LOG = {
         date         = date,
         time         = time,
         simDateTime  = simDateTime,
+        timeTag      = timeTag,
+        driverTag    = driverTag,
+        fileTag      = timeTag .. "_" .. driverTag,
         event = {
             name         = self.app.name,
             datetime     = datetime,
@@ -521,7 +526,7 @@ function ApexLogger:stop(args)
     })
 
     local log_json = JSON.stringify(self.LOG)
-    local jsonPath = ac.dirname() .. "\\laps\\log.json"
+    local jsonPath = ac.dirname() .. "\\laps\\log_" .. self.LOG.fileTag .. ".json"
     local numLaps  = #self.LOG.lapTimes - 1
 
     self.LOG = false

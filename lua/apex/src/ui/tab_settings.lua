@@ -104,6 +104,7 @@ tabSettings.draw = function()
         os.openInExplorer(appState.settingsPath)
     end
     if ui.itemHovered() then
+        ui.setMouseCursor(ui.MouseCursor.Hand)
         appUI.tooltip("Open JSON settings file")
     end
     
@@ -256,30 +257,46 @@ tabSettings.draw = function()
     ui.unindent(12)
 
     ui.offsetCursorY(15)
-    ui.text("TX Mode Settings")
+    ui.text("TX Mode")
     ui.offsetCursorY(5)
     ui.indent(12)
-    ui.setNextItemWidth(120)
-    local newHost, hostChanged = ui.inputText("IP Address", appState.settings.udpHost)
-    if hostChanged then
-        appState.settings.udpHost = newHost
-        appState.saveSettings()
-        if appLogger and appLogger.udpSender then
-            appLogger.udpSender.configure(appState.settings)
-        end
-    end
     
-    ui.setNextItemWidth(120)
-    local newPort, portChanged = ui.inputText("Port", tostring(appState.settings.udpPort), ui.InputTextFlags.CharsDecimal)
-    if portChanged then
-        appState.settings.udpPort = tonumber(newPort)
-        appState.saveSettings()
-        if appLogger and appLogger.udpSender then
-            appLogger.udpSender.configure(appState.settings)
-        end
+    local LABEL_COLUMN = 120
+    local BUTTON_WIDTH = 140
+    ui.pushStyleVar(ui.StyleVar.ButtonTextAlign, vec2(0, 0.5))
+    
+    ui.text("IP Address")
+    ui.sameLine(LABEL_COLUMN)
+    if ui.button(appState.settings.udpHost .. "##udpHostBtn", vec2(BUTTON_WIDTH, 0)) then
+        ui.modalPrompt('IP Address', 'Enter target IP address:', appState.settings.udpHost, function(value)
+            if not value or value == "" then return end
+            appState.settings.udpHost = value
+            appState.saveSettings()
+            if appLogger and appLogger.udpSender then
+                appLogger.udpSender.configure(appState.settings)
+            end
+        end)
     end
-    ui.unindent(12)
+    appUI.tooltip("Change IP Address")
+    
+    ui.text("Port")
+    ui.sameLine(LABEL_COLUMN)
+    if ui.button(tostring(appState.settings.udpPort) .. "##udpPortBtn", vec2(BUTTON_WIDTH, 0)) then
+        ui.modalPrompt('Port', 'Enter target port:', tostring(appState.settings.udpPort), function(value)
+            if not value or value == "" then return end
+            local port = tonumber(value)
+            if port then
+                appState.settings.udpPort = port
+                appState.saveSettings()
+                if appLogger and appLogger.udpSender then
+                    appLogger.udpSender.configure(appState.settings)
+                end
+            end
+        end)
+    end
+    appUI.tooltip("Change Port")
 
+    ui.unindent(12)
     ui.popStyleVar()
 end
 

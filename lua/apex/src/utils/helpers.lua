@@ -108,6 +108,14 @@ helpers.validateDriverName = function(name)
     return sanitized
 end
 
+--- Convert an already-validated driver name into a filesystem-safe path replacing spaces with "_"
+---@param name string
+---@return string
+helpers.sanitizeForPath = function(name)
+    if not name or name == "" then return "unknown" end
+    return name:gsub("%s+", "_")
+end
+
 --- Convert seconds to readable lap time string, example: "1:23.456"
 ---@param time_s number seconds
 ---@return string
@@ -143,6 +151,7 @@ end
 -- File operations =================================================
 
 --- Clean old lap .csv files, keeping ones referenced by current log
+---@deprecated incompatible with driver+timestamp file naming
 ---@param lapFolder string path to laps directory
 helpers.cleanLapsFiles = function(lapFolder, logger)
     try(

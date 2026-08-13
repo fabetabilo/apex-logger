@@ -78,6 +78,7 @@ tabData.draw = function()
         os.openInExplorer(ac.dirname() .. "\\laps")
     end
     if ui.itemHovered() then
+        ui.setMouseCursor(ui.MouseCursor.Hand)
         appUI.tooltip("Open logged laps folder")
     end
     
