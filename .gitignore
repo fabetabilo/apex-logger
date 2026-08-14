@@ -1,0 +1,16 @@
+.vscode/
+.idea/
+
+lua_modules/
+.luarocks/
+luarocks.lock
+
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+.DS_Store
+Thumbs.db
+
+*.log
