@@ -11,8 +11,8 @@ local APP = {
     -- Supported data sampling rates (Hz):
     DATA_RATES = {25, 30, 50, 75, 100, 150},
     
-    URL_UPDATE = "https://github.com/repo/releases",
-    URL_DOCS   = "https://github.com/repo/wiki",
+    URL_UPDATE = "https://github.com/fabetabilo/apex-logger/releases",
+    URL_DOCS   = "https://fabetabilo.github.io/apex-docs/datalogger/getting-started/",
 }
 
 return APP

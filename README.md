@@ -11,7 +11,7 @@ Apex Datalogger is an offline-first telemetry tool, capturing over 180 channels 
 <h4 align="center"><strong>
 <a href="#installation">Installation</a> - <a href="#features">Features</a>
 </br>
-<a href="#usage-guide">Usage Guide</a>
+<a href="https://fabetabilo.github.io/apex-docs/datalogger/getting-started/">Usage Guide</a>
 </strong></h4>
 
 <h4 align="center">for</h4>
@@ -28,7 +28,7 @@ Apex Datalogger is an offline-first telemetry tool, capturing over 180 channels 
 
 #### Installation
 
-- Download the [latest release](https://github.com/fabetabilo/apex-logger/releases/latest/Apex.zip) and extract the ZIP file.
+- Download the [latest release](https://github.com/fabetabilo/apex-logger/releases/latest/download/Apex.zip) and extract the ZIP file.
 - Copy `apps` folder to the AC root folder `..\steamapps\common\assettocorsa` manually.
 
 If everything went well, two apps should be accesible in the session sidebar:
@@ -37,7 +37,7 @@ If everything went well, two apps should be accesible in the session sidebar:
 <img src="docs/vid/sidebar.gif" alt="sidebar" width="300">
 </p>
 
-> Note: In case you are having issues with the app installation, check the extended [installation guide](https://github.com/fabetabilo/apex-logger/wiki)
+> Note: In case you are having issues with the app installation, check the extended [installation guide](https://fabetabilo.github.io/apex-docs/datalogger/installation/)
 
 <p align="center">
 <img src="docs/vid/usage0.gif" alt="sidebar" width="800">
@@ -69,7 +69,7 @@ Apex Datalogger logs data the same way a real datalogger in motorsports would, b
     - `tires_dyn` — tire dynamics: forces, slip, loads, wheel speeds.
     - `gforce` — G-forces.
     - `susp` (suspension) — full suspension geometry: ride heights, CG height, suspension travel, damper data, camber, toe, caster.
-    > Note: For more channel information check the official [documentation](https://github.com/fabetabilo/docs/channels)
+    > Note: For more channel information check the official [documentation](https://fabetabilo.github.io/apex-docs/datalogger/features/)
 - **Python buffer app**: an `apex` Python app acts as a data buffer, extending telemetry acquisition.
 - **Extended Control app integration**: map buttons to toggle LOG and TX modes on and off.
 - **Lap exports**: laps are exported with a customizable driver name and timestamps.
