@@ -232,8 +232,8 @@ local function initApp()
         io.createDir(lapsDir)
     end
     
-    -- clean old lap files: DISABLED, for now it is incompatible with driver+timestamp naming
-    --helpers.cleanLapsFiles(lapsDir, appLogger)
+    -- clean orphan lap files left by invalid or cancelled stints
+    helpers.cleanLapsFiles(lapsDir, appLogger)
     
     appUI.updateUIlog(appMain.name .. " initialized", appUI.colors.MID_GREY)
 end

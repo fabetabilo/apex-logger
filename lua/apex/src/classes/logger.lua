@@ -514,13 +514,14 @@ function ApexLogger:stop(args)
     self.LOG.event.driver  = self.app.settings.driver
     self.LOG.csp           = self.app.cspVersion
 
+    self.LOG.detailData = self.helpers.copyList(self.LOG.detailData)
     if self.stint.isInRace then
-        table.insert(self.app.detailData, {
+        table.insert(self.LOG.detailData, {
             type = "String", id = "Start Lap", value = "2"
         })
     end
 
-    self.LOG.mathItems = self.app.mathItems
+    self.LOG.mathItems = self.helpers.copyList(self.app.mathItems)
     table.insert(self.LOG.mathItems, {
         name = "FFB Steer Assist", value = CAR.ffbSteerAssist,
     })
@@ -862,12 +863,8 @@ function ApexLogger:step(dt)
     
     if SIM.isInMainMenu then
         if self.logging then
-            if self.app.settings.forceRaceMode then
-                self:cancelStint()
-            else
-                self:shouldUpdateChannels()
-                self:stop({console = true, toast = true})
-            end
+            self:shouldUpdateChannels()
+            self:stop({console = true, toast = true})
         end
         return
     end

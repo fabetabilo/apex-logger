@@ -61,7 +61,7 @@ Apex Datalogger logs data the same way a real datalogger in motorsports would, b
     - `car_info` — car status, fuel, electronics, temperatures, damage, driving modes, race position, sector times.
     - `tires` — tire temperatures, pressures, and surface wear.
     - `dyn` — vehicle dynamics, speed, drivetrain torque and power, wheels-off-track count.
-    - `ext_elect` (extended electronics) — hybrid and prototype/open-wheel electronics (LMP1, LMH, F1), including DRS and ERS/KERS support.
+    - `ext_elec` (extended electronics) — hybrid and prototype/open-wheel electronics (LMP1, LMH, F1), including DRS and ERS/KERS support.
     - `aero` — aerodynamic forces and drag, including per-wing aero load.
     - `sim_info` — force feedback, simulator FPS, physics rate, CPU time.
     - `input` — driver inputs: RPM, clutch, throttle, brake, TC/ABS/TC2 modes, lap times, brake torque.
