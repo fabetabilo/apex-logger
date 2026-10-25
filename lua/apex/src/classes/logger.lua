@@ -7,6 +7,7 @@ local OSpreciseClock = os.preciseClock
 local OSdate  = os.date
 local OStime  = os.time
 local Tconcat = table.concat
+local Tunpack = table.unpack or unpack
 local STRformat = string.format
 local toSTR = tostring
 local toNUM = tonumber
@@ -153,7 +154,7 @@ ApexLogger.channelsPreOrder["input"] = {
     "speed",
     "posnorm",
     "laptime",
-    "lapdistance",
+    "drivenInRace",
     "lapcount",
 
     "throttle",
@@ -628,9 +629,24 @@ function ApexLogger:shouldUpdateChannels(dt)
     end
 end
 
+-- File line formats by value count. 9 significant digits keep every float32 value from CSP exact,
+-- longer output only adds float-to-double conversion noise
+local lineFormats = {}
+
+local function getLineFormat(count)
+    local fmt = lineFormats[count]
+    if not fmt then
+        local parts = {}
+        for i = 1, count do parts[i] = "%.9g" end
+        fmt = "%s;%.3f;" .. Tconcat(parts, ";")
+        lineFormats[count] = fmt
+    end
+    return fmt
+end
+
 --- Record one sample of all channels in the given group.
 --- File line: "#groupId#;stintTime;val1;val2;...", stintTime in seconds from the stint start.
---- TX keeps sessionTimeLeft in the line table.
+--- TX keeps sessionTimeLeft and the default number format in the line table.
 ---@param groupId string  the group identifier
 ---@param rate    number  numeric rate this group runs at
 function ApexLogger:updateChannels(groupId, rate)
@@ -899,7 +915,7 @@ function ApexLogger:updateChannels(groupId, rate)
     if self.logging then
         local t = self:stintTime()
         local buffer = self.stint.buffer
-        buffer[#buffer + 1] = lineTable[1] .. ";" .. STRformat("%.3f", t) .. ";" .. Tconcat(lineTable, ";", 3)
+        buffer[#buffer + 1] = STRformat(getLineFormat(#lineTable - 2), lineTable[1], t, Tunpack(lineTable, 3))
         self.stint.sampleCount[groupId] = (self.stint.sampleCount[groupId] or 0) + 1
         self.stint.lastSampleT = t
     end
