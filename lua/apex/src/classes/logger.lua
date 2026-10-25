@@ -362,10 +362,18 @@ function ApexLogger:setRates()
     end
 end
 
+--- Store only the enabled groups, with their channel names and sampling rate (Hz)
 function ApexLogger:setChannelOrder()
+    local groups = self.app.settings.channelGroups
     self.LOG.channelOrder = {}
-    for _, g in ipairs({"session", "car_info", "tires", "dyn", "ext_elec", "aero", "sim_info", "input", "gps", "tires_dyn", "gforce", "susp"}) do
-        self.LOG.channelOrder[g] = ApexLogger.channelsPreOrder[g]
+    self.LOG.rates = {}
+    for rate, rateData in pairs(self.rates) do
+        for _, g in ipairs(rateData.groups) do
+            if not (groups and groups[g] == false) then
+                self.LOG.channelOrder[g] = ApexLogger.channelsPreOrder[g]
+                self.LOG.rates[g] = rate
+            end
+        end
     end
 end
 
@@ -561,6 +569,8 @@ end
 
 --- Check which rate groups need updating this tick
 function ApexLogger:shouldUpdateChannels(dt)
+    -- sim clock stopped (pause or replay): frozen samples would distort the stint timeline
+    if SIM.isPaused or SIM.isReplayActive then return end
     local t = OSpreciseClock()
     local groups = self.app.settings.channelGroups
     --- One timestamp check per rate (4 checks max), then iterate groups within.

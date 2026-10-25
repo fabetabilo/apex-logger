@@ -19,6 +19,9 @@ Apex Datalogger is an offline-first telemetry tool, capturing over 180 channels 
 <img width="140" alt="Assetto Corsa" src="docs/images/ac.png">
 </p>
 
+## ROADMAP
+
+- Ensure MOTEC i2 logging compatibility
 
 ## Installation
 

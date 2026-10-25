@@ -26,6 +26,15 @@ local LOG_MODES = {
     { label = "Race Mode",        autoOff = false, race = true,  tip = "Forcing race mode will always log, no auto-stop in pit, no restart. Stays recording until session end or disabled." },
 }
 
+-- Stint settings are locked while logging
+local function drawLockedHint(locked)
+    if not locked then return end
+    ui.sameLine()
+    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+    ui.text("(locked while logging)")
+    ui.popStyleColor()
+end
+
 -- Data rate sampling management ===============================================
 local function drawRateCombo(label, currentRate, callback)
     ui.setNextItemWidth(70)
@@ -96,18 +105,25 @@ tabSettings.draw = function()
     
     ui.offsetCursorY(5)
     ui.pushStyleVar(ui.StyleVar.IndentSpacing, 12)
-    
+
+    local locked = appLogger and appLogger.logging
+
     -- Driver information
     ui.text("Driver Information")
+    drawLockedHint(locked)
     ui.offsetCursorY(5)
-    
+
+    if locked then ui.pushDisabled() end
     drawDriverCombo()
+    if locked then ui.popDisabled() end
 
     -- MODE options
     ui.offsetCursorY(15)
     ui.text("LOG Mode")
+    drawLockedHint(locked)
     ui.offsetCursorY(5)
     ui.indent(12)
+    if locked then ui.pushDisabled() end
     for _, mode in ipairs(LOG_MODES) do
         local active = (appState.settings.autoLoggingOffRace == mode.autoOff) and (appState.settings.forceRaceMode == mode.race)
         if ui.radioButton(mode.label, active) and not active then
@@ -118,6 +134,7 @@ tabSettings.draw = function()
         end
         appUI.tooltip(mode.tip)
     end
+    if locked then ui.popDisabled() end
     ui.unindent(12)
 
     ui.offsetCursorY(15)
@@ -166,9 +183,11 @@ tabSettings.draw = function()
     -- Channel group selection
     ui.offsetCursorY(15)
     ui.text("Channel Groups")
+    drawLockedHint(locked)
     ui.offsetCursorY(5)
 
     local cg = appState.settings.channelGroups
+    if locked then ui.pushDisabled() end
     if cg then
         -- ── LEFT COLUMN: 1 Hz & 10 Hz ─────────────────────────────────────
         ui.beginGroup()
@@ -276,12 +295,15 @@ tabSettings.draw = function()
         ui.unindent(12)
         ui.endGroup()
     end
+    if locked then ui.popDisabled() end
 
     -- Data sampling rates information
     ui.offsetCursorY(15)
     ui.text("Custom Channels")
+    drawLockedHint(locked)
     ui.offsetCursorY(5)
 
+    if locked then ui.pushDisabled() end
     drawRateCombo("##rateMain", appState.settings.dataRate, function(rate)
         appState.settings.dataRate = rate
         if appLogger then appLogger:setRates() end
@@ -289,6 +311,7 @@ tabSettings.draw = function()
     ui.sameLine()
     ui.text("Suspension Rate")
     appUI.tooltip("Choose max data sampling rate for suspension channel")
+    if locked then ui.popDisabled() end
     ui.offsetCursorY(5)
 
     -- Shortcut buttons
