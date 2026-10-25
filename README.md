@@ -73,6 +73,8 @@ Apex Datalogger logs data the same way a real datalogger in motorsports would, b
     - `gforce` — G-forces.
     - `susp` (suspension) — full suspension geometry: ride heights, CG height, suspension travel, damper data, camber, toe, caster.
     > Note: For more channel information check the official [documentation](https://fabetabilo.github.io/apex-docs/datalogger/features/)
+- **Multi-rate sampling**: slow groups are sampled at fixed rates (`session` and `car_info` at 1 Hz; `tires`, `dyn`, `ext_elec`, `aero` and `sim_info` at 10 Hz), while the fast groups (`input`, `gps`, `tires_dyn`, `gforce` and `susp`) run at a selectable rate: 30, 50, 60, 100 or 120 Hz.
+    > Note: CSP updates car data once per rendered frame, so the real sampling rate is capped by the game FPS. At 60 FPS, any rate above 60 Hz still records about 60 samples per second. The Settings tab shows the current FPS and warns when the selected rate is above it.
 - **Python buffer app**: an `apex` Python app acts as a data buffer, extending telemetry acquisition.
 - **Extended Control app integration**: map buttons to toggle LOG and TX modes on and off.
 - **Lap exports**: laps are exported with a customizable driver name and timestamps.

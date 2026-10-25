@@ -66,7 +66,7 @@ end
 --- called by the logger at each updateChannels() call with the line data table
 ---@param lineTable table array of channel values for this group tick
 ---@param groupId string the group identifier (e.g. "input", "gps", "susp")
----@param rate number the data rate in Hz (1, 10, 30, or user Hz)
+---@param rate number the data rate in Hz (1, 10, or user Hz)
 function udpSender.send(lineTable, groupId, rate)
     if not udpSender.enabled then return end
     if not udpSender.socket then return end

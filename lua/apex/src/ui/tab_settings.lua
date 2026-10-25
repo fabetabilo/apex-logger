@@ -247,11 +247,11 @@ tabSettings.draw = function()
         ui.unindent(12)
         ui.endGroup()
         
-        -- ── RIGHT COLUMN: 30 Hz & Customizable Hz ─────────────────────────
+        -- ── RIGHT COLUMN: fast groups at user customizable Hz ─────────────
         ui.sameLine(0, 16)
         ui.beginGroup()
         ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
-        ui.text("30 Hz")
+        ui.text(tostring(appState.settings.dataRate) .. " Hz")
         ui.offsetCursorY(5)
         ui.popStyleColor()
         ui.indent(12)
@@ -278,15 +278,7 @@ tabSettings.draw = function()
             appState.saveSettings()
         end
         appUI.tooltip("CG accelerations: lateral, longitudinal, vertical")
-        ui.unindent(12)
-        
-        -- user customizable Hz
-        ui.offsetCursorY(3)
-        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
-        ui.text(tostring(appState.settings.dataRate) .. " Hz")
-        ui.offsetCursorY(5)
-        ui.popStyleColor()
-        ui.indent(12)
+
         if ui.checkbox("Suspension##cg_susp", cg.susp ~= false) then
             cg.susp = not (cg.susp ~= false)
             appState.saveSettings()
@@ -297,9 +289,9 @@ tabSettings.draw = function()
     end
     if locked then ui.popDisabled() end
 
-    -- Data sampling rates information
+    -- Fast groups sampling rate, real samples are capped by the game FPS
     ui.offsetCursorY(15)
-    ui.text("Custom Channels")
+    ui.text("Sampling Rate")
     drawLockedHint(locked)
     ui.offsetCursorY(5)
 
@@ -309,9 +301,22 @@ tabSettings.draw = function()
         if appLogger then appLogger:setRates() end
     end)
     ui.sameLine()
-    ui.text("Suspension Rate")
-    appUI.tooltip("Choose max data sampling rate for suspension channel")
+    ui.text("Fast Groups")
+    appUI.tooltip("Sampling rate for Inputs, GPS, Tire Dynamics, G-Force and Suspension")
     if locked then ui.popDisabled() end
+
+    local fps = math.floor(SIM.fps + 0.5)
+    ui.sameLine()
+    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+    ui.text("(" .. fps .. " FPS)")
+    ui.popStyleColor()
+    appUI.tooltip("Car data updates once per rendered frame, so real samples per second are capped by the FPS")
+    -- 5% margin so the warning doesn't flicker when FPS hovers around the selected rate
+    if fps > 0 and appState.settings.dataRate > fps * 1.05 then
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.ORANGE)
+        ui.textWrapped("Rate above current FPS, real samples are capped at " .. fps .. " Hz")
+        ui.popStyleColor()
+    end
     ui.offsetCursorY(5)
 
     -- Shortcut buttons

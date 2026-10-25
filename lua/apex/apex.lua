@@ -26,8 +26,6 @@ local appMain = {
     name    = APP_CFG.NAME,
     id      = string.lower(APP_CFG.NAME),
     version = APP_CFG.VERSION,
-    folderPattern = APP_CFG.FOLDER_PATTERN,
-    filePattern   = APP_CFG.FILE_PATTERN,
     urlUpdate = APP_CFG.URL_UPDATE,
     urlDocs   = APP_CFG.URL_DOCS,
     cspVersion = (ac.getPatchVersion() or "?") .. " (" .. (ac.getPatchVersionCode() or "?") .. ")",
@@ -116,12 +114,26 @@ local function loadSettings()
                         parsed[k] = v
                     end
                 end
+                local fixed = false
                 -- LOG modes are exclusive, older settings could have both enabled
                 if parsed.autoLoggingOffRace and parsed.forceRaceMode then
                     parsed.forceRaceMode = false
+                    fixed = true
+                end
+                -- older settings could have a removed data rate, use the nearest supported one
+                if not table.contains(APP_CFG.DATA_RATES, parsed.dataRate) then
+                    local rate = tonumber(parsed.dataRate) or defaultSettings.dataRate
+                    local nearest = APP_CFG.DATA_RATES[1]
+                    for _, r in ipairs(APP_CFG.DATA_RATES) do
+                        if math.abs(r - rate) < math.abs(nearest - rate) then nearest = r end
+                    end
+                    parsed.dataRate = nearest
+                    fixed = true
                 end
 
                 appMain.settings = parsed
+                -- persist corrections so the file matches what the app uses
+                if fixed then appMain.saveSettings() end
                 return
             end
         end

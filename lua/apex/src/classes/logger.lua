@@ -25,7 +25,7 @@ ApexLogger = class('ApexLogger', class.NoInitialize)
 -- Recollect and records in-real-time car physics data at multiple simultaneous frequencies. Each rate group is independently sampled 
 -- and stored per-lap as .csv file.
 -- Rate dispatch: the logger checks timestamps once per rate bucket, then iterates all enabled groups within that bucket
--- minimizing overhead to 4 timestamp checks per tick.
+-- minimizing overhead to 3 timestamp checks per tick.
 
 ApexLogger.channelsPreOrder = {}
 ApexLogger.channelsPreOrder["session"] = {
@@ -335,31 +335,11 @@ function ApexLogger:setRates()
     self.currentDataRate = self.app.settings.dataRate
     local userRate = self.currentDataRate
     local t = OSpreciseClock()
-
     self.rates = {
         [1] = { delay = 1, lastUpdt = t, groups = {"session", "car_info"} },
         [10] = { delay = 0.1, lastUpdt = t, groups = {"tires", "dyn", "ext_elec", "aero", "sim_info"} },
-        [30] = { delay = 1/30, lastUpdt = t, groups = {"input", "gps", "tires_dyn", "gforce"} },
-        [userRate] = { delay = 1/userRate - 0.007, lastUpdt = t, groups = {"susp"} },
+        [userRate] = { delay = 1/userRate, lastUpdt = t, groups = {"input", "gps", "tires_dyn", "gforce", "susp"} },
     }
-    -- If userRate collides with a fixed rate (e.g. 30), merge groups rather than overwrite.
-    -- In practice DATA_RATES starts at 25 so this only matters for edge cases.
-    if userRate == 1 then
-        for _, g in ipairs({"susp"}) do
-            table.insert(self.rates[1].groups, g)
-        end
-        self.rates[userRate] = nil  -- remove duplicate key
-    elseif userRate == 10 then
-        for _, g in ipairs({"susp"}) do
-            table.insert(self.rates[10].groups, g)
-        end
-        self.rates[userRate] = nil
-    elseif userRate == 30 then
-        for _, g in ipairs({"susp"}) do
-            table.insert(self.rates[30].groups, g)
-        end
-        self.rates[userRate] = nil
-    end
 end
 
 --- Store only the enabled groups, with their channel names and sampling rate (Hz)
@@ -567,16 +547,19 @@ end
 
 -- Channel RECORDING =====================================================================================
 
---- Check which rate groups need updating this tick
+--- Check which rate groups need updating this tick. One timestamp check per rate with 3 checks max
 function ApexLogger:shouldUpdateChannels(dt)
     -- sim clock stopped (pause or replay): frozen samples would distort the stint timeline
     if SIM.isPaused or SIM.isReplayActive then return end
     local t = OSpreciseClock()
     local groups = self.app.settings.channelGroups
-    --- One timestamp check per rate (4 checks max), then iterate groups within.
     for rate, rateData in pairs(self.rates) do
         if t - rateData.lastUpdt >= rateData.delay then
-            rateData.lastUpdt = t
+            -- resync when lagging two periods behind (long frame, pause, rate above FPS)
+            rateData.lastUpdt = rateData.lastUpdt + rateData.delay
+            if t - rateData.lastUpdt >= 2 * rateData.delay then
+                rateData.lastUpdt = t
+            end
             for _, groupId in ipairs(rateData.groups) do
                 if not (groups and groups[groupId] == false) then
                     self:updateChannels(groupId, rate)
