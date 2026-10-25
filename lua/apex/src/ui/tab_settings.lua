@@ -103,18 +103,66 @@ tabSettings.draw = function()
     
     drawDriverCombo()
 
-    -- Shortcut buttons
+    -- MODE options
     ui.offsetCursorY(15)
-    ui.text("Settings Folder")
+    ui.text("LOG Mode")
     ui.offsetCursorY(5)
-    if ui.button("Open settings file##openSettings", vec2(ui.availableSpaceX(), 22)) then
-        os.openInExplorer(appState.settingsPath)
+    ui.indent(12)
+    for _, mode in ipairs(LOG_MODES) do
+        local active = (appState.settings.autoLoggingOffRace == mode.autoOff) and (appState.settings.forceRaceMode == mode.race)
+        if ui.radioButton(mode.label, active) and not active then
+            appState.settings.autoLoggingOffRace = mode.autoOff
+            appState.settings.forceRaceMode = mode.race
+            appState.saveSettings()
+            appUI.updateUIlog("LOG mode: " .. mode.label, appUI.colors.GREY)
+        end
+        appUI.tooltip(mode.tip)
     end
-    if ui.itemHovered() then
-        ui.setMouseCursor(ui.MouseCursor.Hand)
-        appUI.tooltip("Open JSON settings file")
+    ui.unindent(12)
+
+    ui.offsetCursorY(15)
+    ui.text("TX Mode")
+    ui.offsetCursorY(5)
+    ui.indent(12)
+
+    local LABEL_COLUMN = 120
+    local BUTTON_WIDTH = 140
+    ui.pushStyleVar(ui.StyleVar.ButtonTextAlign, vec2(0, 0.5))
+
+    ui.text("IP Address")
+    ui.sameLine(LABEL_COLUMN)
+    if ui.button(appState.settings.udpHost .. "##udpHostBtn", vec2(BUTTON_WIDTH, 0)) then
+        ui.modalPrompt('IP Address', 'Enter target IP address:', appState.settings.udpHost, function(value)
+            if not value or value == "" then return end
+            appState.settings.udpHost = value
+            appState.saveSettings()
+            if appLogger and appLogger.udpSender then
+                appLogger.udpSender.configure(appState.settings)
+            end
+        end)
     end
-    
+    appUI.tooltip("Change IP Address")
+
+    ui.text("Port")
+    ui.sameLine(LABEL_COLUMN)
+    if ui.button(tostring(appState.settings.udpPort) .. "##udpPortBtn", vec2(BUTTON_WIDTH, 0)) then
+        ui.modalPrompt('Port', 'Enter target port:', tostring(appState.settings.udpPort), function(value)
+            if not value or value == "" then return end
+            local port = tonumber(value)
+            if port then
+                appState.settings.udpPort = port
+                appState.saveSettings()
+                if appLogger and appLogger.udpSender then
+                    appLogger.udpSender.configure(appState.settings)
+                end
+            end
+        end)
+    end
+    appUI.tooltip("Change Port")
+
+    ui.unindent(12)
+    ui.popStyleVar()
+
     -- Channel group selection
     ui.offsetCursorY(15)
     ui.text("Channel Groups")
@@ -243,64 +291,18 @@ tabSettings.draw = function()
     appUI.tooltip("Choose max data sampling rate for suspension channel")
     ui.offsetCursorY(5)
 
-    -- MODE options
+    -- Shortcut buttons
     ui.offsetCursorY(15)
-    ui.text("LOG Mode")
+    ui.text("Settings Folder")
     ui.offsetCursorY(5)
-    ui.indent(12)
-    for _, mode in ipairs(LOG_MODES) do
-        local active = (appState.settings.autoLoggingOffRace == mode.autoOff) and (appState.settings.forceRaceMode == mode.race)
-        if ui.radioButton(mode.label, active) and not active then
-            appState.settings.autoLoggingOffRace = mode.autoOff
-            appState.settings.forceRaceMode = mode.race
-            appState.saveSettings()
-            appUI.updateUIlog("LOG mode: " .. mode.label, appUI.colors.GREY)
-        end
-        appUI.tooltip(mode.tip)
+    if ui.button("Open settings file##openSettings", vec2(ui.availableSpaceX(), 22)) then
+        os.openInExplorer(appState.settingsPath)
     end
-    ui.unindent(12)
+    if ui.itemHovered() then
+        ui.setMouseCursor(ui.MouseCursor.Hand)
+        appUI.tooltip("Open JSON settings file")
+    end
 
-    ui.offsetCursorY(15)
-    ui.text("TX Mode")
-    ui.offsetCursorY(5)
-    ui.indent(12)
-    
-    local LABEL_COLUMN = 120
-    local BUTTON_WIDTH = 140
-    ui.pushStyleVar(ui.StyleVar.ButtonTextAlign, vec2(0, 0.5))
-    
-    ui.text("IP Address")
-    ui.sameLine(LABEL_COLUMN)
-    if ui.button(appState.settings.udpHost .. "##udpHostBtn", vec2(BUTTON_WIDTH, 0)) then
-        ui.modalPrompt('IP Address', 'Enter target IP address:', appState.settings.udpHost, function(value)
-            if not value or value == "" then return end
-            appState.settings.udpHost = value
-            appState.saveSettings()
-            if appLogger and appLogger.udpSender then
-                appLogger.udpSender.configure(appState.settings)
-            end
-        end)
-    end
-    appUI.tooltip("Change IP Address")
-    
-    ui.text("Port")
-    ui.sameLine(LABEL_COLUMN)
-    if ui.button(tostring(appState.settings.udpPort) .. "##udpPortBtn", vec2(BUTTON_WIDTH, 0)) then
-        ui.modalPrompt('Port', 'Enter target port:', tostring(appState.settings.udpPort), function(value)
-            if not value or value == "" then return end
-            local port = tonumber(value)
-            if port then
-                appState.settings.udpPort = port
-                appState.saveSettings()
-                if appLogger and appLogger.udpSender then
-                    appLogger.udpSender.configure(appState.settings)
-                end
-            end
-        end)
-    end
-    appUI.tooltip("Change Port")
-
-    ui.unindent(12)
     ui.popStyleVar()
 end
 

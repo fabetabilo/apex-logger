@@ -6,7 +6,7 @@
 
 local APP = {
     NAME    = "Apex",
-    VERSION = "0.2",
+    VERSION = "0.2.1",
     
     -- Supported data sampling rates (Hz):
     DATA_RATES = {25, 30, 50, 75, 100, 150},
