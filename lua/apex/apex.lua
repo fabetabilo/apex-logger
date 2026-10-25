@@ -116,6 +116,10 @@ local function loadSettings()
                         parsed[k] = v
                     end
                 end
+                -- LOG modes are exclusive, older settings could have both enabled
+                if parsed.autoLoggingOffRace and parsed.forceRaceMode then
+                    parsed.forceRaceMode = false
+                end
 
                 appMain.settings = parsed
                 return

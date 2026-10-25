@@ -406,7 +406,7 @@ function ApexLogger:saveLap(lapIndex, signal)
     if self.LOG == false then return end
 
     local str = Tconcat(self.stint.lapTable, "\n")
-    local lapPath = ac.dirname() .. "\\laps\\lap_" .. self.LOG.timeTag .. "_" .. lapIndex .. "_" .. self.LOG.driverTag .. ".csv"
+    local lapPath = ac.dirname() .. "\\laps\\lap_" .. self.LOG.timeTag .. "_" .. lapIndex .. "_" .. self.LOG.nameTag .. ".csv"
     self.LOG.lapFiles[#self.LOG.lapFiles + 1] = lapPath
     self.stint.lapCounter = self.stint.lapCounter + 1
     io.saveAsync(lapPath, str)
@@ -435,21 +435,24 @@ end
 --- start a new logging stint
 function ApexLogger:start()
     self:setRates()
-    local date = OSdate("%d/%m/%Y")
-    local time = OSdate("%X")
+    -- single clock read so date, time and file tag always match
+    local now = OStime()
+    local date = OSdate("%d/%m/%Y", now)
+    local time = OSdate("%H:%M:%S", now)
     local datetime = date .. " " .. time
-    local simDateObj = OSdate("!*t", SIM.timestamp)
-    local simDateTime = simDateObj.day .. "/" .. simDateObj.month .. "/" .. simDateObj.year .. " " .. simDateObj.hour .. ":" .. simDateObj.min .. ":" .. simDateObj.sec
-    local timeTag = OSdate("%H%M%S")
+    local simDateTime = OSdate("!%d/%m/%Y %H:%M:%S", SIM.timestamp)
+    local timeTag = OSdate("%Y%m%d-%H%M%S", now)
     local driverTag = self.helpers.sanitizeForPath(self.app.settings.driver)
-    
+    local nameTag = driverTag .. "_" .. self.helpers.sanitizeForPath(ac.getTrackID()) .. "_" .. self.helpers.sanitizeForPath(ac.getCarID(0))
+
     self.LOG = {
         date         = date,
         time         = time,
         simDateTime  = simDateTime,
         timeTag      = timeTag,
         driverTag    = driverTag,
-        fileTag      = timeTag .. "_" .. driverTag,
+        nameTag      = nameTag,
+        fileTag      = timeTag .. "_" .. nameTag,
         event = {
             name         = self.app.name,
             datetime     = datetime,

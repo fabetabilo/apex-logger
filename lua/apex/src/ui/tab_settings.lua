@@ -19,6 +19,13 @@ tabSettings.init = function(state, ui, logger, helpersRef, appCfg)
     APP_CFG   = appCfg
 end
 
+-- LOG modes are mutually exclusive: Standard (none), Auto off logging or Race Mode
+local LOG_MODES = {
+    { label = "Standard",         autoOff = false, race = false, tip = "Logging stops in pit and starts a new stint on every pit exit" },
+    { label = "Auto off logging", autoOff = true,  race = false, tip = "Automatically disable logging when entering a race session" },
+    { label = "Race Mode",        autoOff = false, race = true,  tip = "Forcing race mode will always log, no auto-stop in pit, no restart. Stays recording until session end or disabled." },
+}
+
 -- Data rate sampling management ===============================================
 local function drawRateCombo(label, currentRate, callback)
     ui.setNextItemWidth(70)
@@ -241,19 +248,16 @@ tabSettings.draw = function()
     ui.text("LOG Mode")
     ui.offsetCursorY(5)
     ui.indent(12)
-    if ui.checkbox("Auto off logging", appState.settings.autoLoggingOffRace) then
-        appState.settings.autoLoggingOffRace = not appState.settings.autoLoggingOffRace
-        appState.saveSettings()
-        appUI.updateUIlog("Auto off logging mode: " .. (appState.settings.autoLoggingOffRace and "active" or "inactive"), appUI.colors.GREY)
+    for _, mode in ipairs(LOG_MODES) do
+        local active = (appState.settings.autoLoggingOffRace == mode.autoOff) and (appState.settings.forceRaceMode == mode.race)
+        if ui.radioButton(mode.label, active) and not active then
+            appState.settings.autoLoggingOffRace = mode.autoOff
+            appState.settings.forceRaceMode = mode.race
+            appState.saveSettings()
+            appUI.updateUIlog("LOG mode: " .. mode.label, appUI.colors.GREY)
+        end
+        appUI.tooltip(mode.tip)
     end
-    appUI.tooltip("Automatically disable logging when entering a race session")
-
-    if ui.checkbox("Race Mode", appState.settings.forceRaceMode) then
-        appState.settings.forceRaceMode = not appState.settings.forceRaceMode
-        appState.saveSettings()
-        appUI.updateUIlog("Race mode: " .. (appState.settings.forceRaceMode and "active" or "inactive"), appUI.colors.GREY)
-    end
-    appUI.tooltip("Forcing race mode will always log, no auto-stop in pit, no restart. Stays recording until session end or disabled.")
     ui.unindent(12)
 
     ui.offsetCursorY(15)
