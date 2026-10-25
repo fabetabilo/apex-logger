@@ -159,10 +159,11 @@ end
 
 -- File operations =================================================
 
---- Delete orphan lap .csv files (invalid or cancelled stints) not referenced by any log_*.json nor by the active stint
+--- Delete orphan lap .csv files of the older per-lap format, not referenced by any log_*.json.
+--- Stint files need no cleanup: invalid or cancelled stints delete their .csv when they end,
+--- and a stint .csv without its .json (game crash) is kept so its data can be recovered.
 ---@param lapFolder string path to laps directory
----@param logger table|nil active ApexLogger
-helpers.cleanLapsFiles = function(lapFolder, logger)
+helpers.cleanLapsFiles = function(lapFolder)
     try(
         function()
             local keep = {}
@@ -170,10 +171,6 @@ helpers.cleanLapsFiles = function(lapFolder, logger)
                 for _, path in ipairs(lapFiles or {}) do
                     keep[path:match("[^\\/]+$")] = true
                 end
-            end
-
-            if logger and logger.logging then
-                keepFiles(logger.LOG.lapFiles)
             end
 
             local unreadable = false

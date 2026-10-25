@@ -248,8 +248,8 @@ local function initApp()
         io.createDir(lapsDir)
     end
     
-    -- clean orphan lap files left by invalid or cancelled stints
-    helpers.cleanLapsFiles(lapsDir, appLogger)
+    -- clean orphan lap files left by old per-lap format
+    helpers.cleanLapsFiles(lapsDir)
     
     appUI.updateUIlog(appMain.name .. " initialized", appUI.colors.MID_GREY)
 end
@@ -332,7 +332,8 @@ function script.reset()
     end
 end
 
---- session start handler
+--- Session start handler
+-- a new session ends the active stint, saved if valid
 ac.onSessionStart(function(sessionType, sessionIndex)
     appMain.updateSession()
     appMain.sessionType = sessionType
@@ -343,7 +344,7 @@ ac.onSessionStart(function(sessionType, sessionIndex)
     end
 
     if appLogger then
-        appLogger:resetStint()
+        appLogger:stop({ console = true, toast = true })
         appLogger:setRates()
     end
 end)

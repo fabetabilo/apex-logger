@@ -50,10 +50,10 @@ If everything went well, two apps should be accesible in the session sidebar:
 
 ## Features
 
-Apex Datalogger logs data the same way a real datalogger in motorsports would, but instead of writing to an SD card, the sim telemetry is saved lap by lap to a dedicated laps folder inside the app directory `apps/lua/apex/laps/`.
+Apex Datalogger logs data the same way a real datalogger in motorsports would, but instead of writing to an SD card, the sim telemetry is saved stint by stint to a dedicated laps folder inside the app directory `apps/lua/apex/laps/`.
 
 - **Fully automatic**: install once and let it run in the background, no need to keep the app window open. Keeping the HUD active is recommended just to check the logger mode status.
-- **Stint-based logging**: laps are grouped and saved by stint, with automatic detection of invalid stints.
+- **Stint-based logging**: each stint is saved as a single CSV file, with automatic detection of invalid stints. Data is written to disk every second, so a game crash loses at most the last second.
 - **Local logging & UDP streaming**: capture telemetry locally, stream it live over UDP, or run both at the same time, each mode works independently.
 - **LOG mode**: for saving laps locally.
 - **TX mode**: for transmitting telemetry over UDP to a specific IP and port.
@@ -77,8 +77,8 @@ Apex Datalogger logs data the same way a real datalogger in motorsports would, b
     > Note: CSP updates car data once per rendered frame, so the real sampling rate is capped by the game FPS. At 60 FPS, any rate above 60 Hz still records about 60 samples per second. The Settings tab shows the current FPS and warns when the selected rate is above it.
 - **Python buffer app**: an `apex` Python app acts as a data buffer, extending telemetry acquisition.
 - **Extended Control app integration**: map buttons to toggle LOG and TX modes on and off.
-- **Lap exports**: laps are exported with a customizable driver name and timestamps.
-- **Lap CSV export**: laps are exported in .CSV format files.
+- **Stint exports**: stints are exported with a customizable driver name and timestamps.
+- **Stint CSV export**: every sample carries its time in seconds from the stint start, and a JSON log per stint stores the session details, lap times and lap markers.
 - **Built-in console**: shows live datalogger status and a running log of completed laps, including lap time, outlap flag, and invalid-lap flag.
 - **Session mode support**: Hotlap, Practice, and Race are supported; other modes are untested.
 - **Two in-game modules**:

@@ -7,10 +7,8 @@
 
 local APP = {
     NAME    = "Apex",
-    VERSION = "0.2.1",
-    
+    VERSION = "0.2.4",
     DATA_RATES = {30, 50, 60, 100, 120},
-    
     URL_UPDATE = "https://github.com/fabetabilo/apex-logger/releases",
     URL_DOCS   = "https://fabetabilo.github.io/apex-docs/datalogger/getting-started/",
 }

@@ -22,8 +22,8 @@ ApexLogger = class('ApexLogger', class.NoInitialize)
 
 -- CHANNELS metadata ==================================================================================================================================
 
--- Recollect and records in-real-time car physics data at multiple simultaneous frequencies. Each rate group is independently sampled 
--- and stored per-lap as .csv file.
+-- Recollect and records in-real-time car physics data at multiple simultaneous frequencies. Each rate group is independently sampled
+-- and stored in a single .csv file per stint.
 -- Rate dispatch: the logger checks timestamps once per rate bucket, then iterates all enabled groups within that bucket
 -- minimizing overhead to 3 timestamp checks per tick.
 
@@ -284,7 +284,13 @@ function ApexLogger:initialize()
         noRestart    = false,
         lapCounter   = 1,
         prevLapCount = CAR.lapCount,
-        lapTable     = {},
+        file         = nil,
+        filePath     = "",
+        buffer       = {},
+        startTs      = 0,
+        lastFlush    = 0,
+        lastSampleT  = 0,
+        sampleCount  = {},
         carOnTrack   = false,
         hotlapStarted = false,
         lastCancel   = 0,
@@ -302,6 +308,8 @@ end
 -- Stint management ==============================================================
 
 function ApexLogger:resetStint()
+    -- a stint still open at reset is discarded (cancelled, invalid or interrupted)
+    self:closeStintFile(true)
     self.LOG     = false
     self.logging = false
     self.stint.hotlapStarted = false
@@ -312,7 +320,6 @@ function ApexLogger:resetStint()
     end
     
     self.stint.isOnline  = CAR.sessionID ~= -1
-    self.stint.lapTable  = {}
     self.stint.carOnTrack = false
     self.stint.lapCounter  = 1
     self.stint.prevLapCount = CAR.lapCount
@@ -360,11 +367,10 @@ end
 
 -- Lap management =======================================================================
 
---- Create new lap data table and optionally report previous lap time
+--- Optionally report the previous lap time in the console
 function ApexLogger:newLap(report)
     if report == nil then report = true end
     if self.LOG == false then return end
-    self.stint.lapTable = {}
 
     if (self.stint.lapCounter > 1) and report then
         local lap = self.stint.lapCounter - 1
@@ -388,22 +394,44 @@ function ApexLogger:newLap(report)
     end
 end
 
---- Save the current lap data as .csv file
-function ApexLogger:saveLap(lapIndex, signal)
-    lapIndex = lapIndex or self.stint.lapCounter
+--- Mark a line crossing on the stint timeline (MoTeC beacon marker) and signal the HUD
+function ApexLogger:markLap()
     if self.LOG == false then return end
-
-    local str = Tconcat(self.stint.lapTable, "\n")
-    local lapPath = ac.dirname() .. "\\laps\\lap_" .. self.LOG.timeTag .. "_" .. lapIndex .. "_" .. self.LOG.nameTag .. ".csv"
-    self.LOG.lapFiles[#self.LOG.lapFiles + 1] = lapPath
+    -- lapTimeMs restarts at the line, so the crossing happened lapTimeMs ago
+    local marker = self:stintTime() - CAR.lapTimeMs / 1000
+    self.LOG.beaconMarkers[#self.LOG.beaconMarkers + 1] = math.floor(marker * 1000 + 0.5) / 1000
     self.stint.lapCounter = self.stint.lapCounter + 1
-    io.saveAsync(lapPath, str)
-    
-    --- signal HUD: lap was just saved
-    --- end-of-stint in-lap is skipped (signal=false)
-    if signal ~= false then
-        self.app.lapSavedAt = OSpreciseClock()
-    end
+    self.app.lapSavedAt = OSpreciseClock()
+    self:flushStint()
+end
+
+
+-- Stint file =======================================================================
+
+--- Seconds since the stint start on the sim clock (stops while paused)
+function ApexLogger:stintTime()
+    return (self.stint.startTs - SIM.sessionTimeLeft) / 1000
+end
+
+--- Append the buffered lines to the stint file
+function ApexLogger:flushStint()
+    local file = self.stint.file
+    if not file or #self.stint.buffer == 0 then return end
+    file:write(Tconcat(self.stint.buffer, "\n"), "\n")
+    file:flush()
+    self.stint.buffer = {}
+end
+
+--- Close the stint file, deleting it when the stint is discarded
+---@param discard boolean
+function ApexLogger:closeStintFile(discard)
+    local file = self.stint.file
+    if not file then return end
+    if not discard then self:flushStint() end
+    file:close()
+    if discard then io.deleteFile(self.stint.filePath) end
+    self.stint.file = nil
+    self.stint.buffer = {}
 end
 
 
@@ -434,6 +462,7 @@ function ApexLogger:start()
     local nameTag = driverTag .. "_" .. self.helpers.sanitizeForPath(ac.getTrackID()) .. "_" .. self.helpers.sanitizeForPath(ac.getCarID(0))
 
     self.LOG = {
+        formatVersion = 2,
         date         = date,
         time         = time,
         simDateTime  = simDateTime,
@@ -451,8 +480,9 @@ function ApexLogger:start()
             session      = self.app.sessionName .. " (" .. self.currentDataRate .. "Hz)",
             comment      = self.app.cspVersion .. " / " .. self.app.name .. " v" .. self.app.version,
         },
-        lapFiles      = {},
+        logFile       = "log_" .. timeTag .. "_" .. nameTag .. ".csv",
         lapTimes      = {},
+        beaconMarkers = {},
         dataRate      = self.currentDataRate,
         channelOrder  = {},
         detailData    = self.app.detailData,
@@ -463,7 +493,24 @@ function ApexLogger:start()
     }
     
     self:setChannelOrder()
-    
+
+    local filePath = ac.dirname() .. "\\laps\\" .. self.LOG.logFile
+    local file = io.open(filePath, "wb")
+    if not file then
+        -- turn LOG off so the start isn't retried every frame
+        self.LOG = false
+        self.app.settings.enable = false
+        self.appUI.updateUIlog("LOG: could not create the stint file", self.appUI.colors.ORANGE)
+        return
+    end
+    self.stint.file        = file
+    self.stint.filePath    = filePath
+    self.stint.buffer      = {}
+    self.stint.startTs     = SIM.sessionTimeLeft
+    self.stint.lastFlush   = OSpreciseClock()
+    self.stint.lastSampleT = 0
+    self.stint.sampleCount = {}
+
     self.appUI.updateUIlog("LOG: local logging started", self.appUI.colors.GREEN)
     
     self.logging = true
@@ -501,7 +548,14 @@ function ApexLogger:stop(args)
         return
     end
 
-    self:saveLap(self.stint.lapCounter, false)  -- Save in-lap
+    -- measured samples per second, rates above the FPS get one sample per frame
+    local duration = self.stint.lastSampleT
+    self.LOG.effectiveRates = {}
+    for g, n in pairs(self.stint.sampleCount) do
+        self.LOG.effectiveRates[g] = duration > 0 and math.floor(n / duration * 100 + 0.5) / 100 or 0
+    end
+
+    self:closeStintFile(false)  -- writes the in-lap
     self.LOG.event.driver  = self.app.settings.driver
     self.LOG.csp           = self.app.cspVersion
 
@@ -567,10 +621,16 @@ function ApexLogger:shouldUpdateChannels(dt)
             end
         end
     end
+    -- write once per second: memory only holds the last second and a crash loses at most that
+    if self.logging and t - self.stint.lastFlush >= 1 then
+        self.stint.lastFlush = t
+        self:flushStint()
+    end
 end
 
 --- Record one sample of all channels in the given group.
---- Line format: "#groupId#;sessionTimeLeft;val1;val2;..."
+--- File line: "#groupId#;stintTime;val1;val2;...", stintTime in seconds from the stint start.
+--- TX keeps sessionTimeLeft in the line table.
 ---@param groupId string  the group identifier
 ---@param rate    number  numeric rate this group runs at
 function ApexLogger:updateChannels(groupId, rate)
@@ -837,7 +897,11 @@ function ApexLogger:updateChannels(groupId, rate)
 
     --- store the line
     if self.logging then
-        self.stint.lapTable[#self.stint.lapTable + 1] = Tconcat(lineTable, ";")
+        local t = self:stintTime()
+        local buffer = self.stint.buffer
+        buffer[#buffer + 1] = lineTable[1] .. ";" .. STRformat("%.3f", t) .. ";" .. Tconcat(lineTable, ";", 3)
+        self.stint.sampleCount[groupId] = (self.stint.sampleCount[groupId] or 0) + 1
+        self.stint.lastSampleT = t
     end
     self.udpSender.send(lineTable, groupId, rate)
 end
@@ -851,7 +915,7 @@ function ApexLogger:step(dt)
     --- New lap detection:
     if self.logging and (CAR.lapCount > self.stint.prevLapCount) then
         table.insert(self.LOG.lapTimes, CAR.previousLapTimeMs / 1000)
-        self:saveLap()
+        self:markLap()
         self:newLap()
         self.stint.prevLapCount = CAR.lapCount > 0 and CAR.lapCount
             or SESSION.leaderboard[CAR.racePosition - 1].laps
@@ -965,7 +1029,7 @@ function ApexLogger:step(dt)
             table.insert(self.LOG.lapTimes,
                 (Mabs(SIM.sessionTimeLeft - self.stint.startTime) / 1000)
                 - (CAR.lapTimeMs / 1000) - dt)
-            self:saveLap()
+            self:markLap()
             self:newLap(false)
             self.appUI.updateUIlog("LOG: hotlap started", self.appUI.colors.GREY)
             return
