@@ -928,6 +928,11 @@ end
 -- Logger step function  ==============================================================================================
 
 function ApexLogger:step(dt)
+    -- sampled before the stint checks, so TX streams in every stint state and LOG mode
+    if self.logging or self.app.settings.udpEnable then
+        self:shouldUpdateChannels()
+    end
+
     --- New lap detection:
     if self.logging and (CAR.lapCount > self.stint.prevLapCount) then
         table.insert(self.LOG.lapTimes, CAR.previousLapTimeMs / 1000)
@@ -939,7 +944,6 @@ function ApexLogger:step(dt)
     
     if SIM.isInMainMenu then
         if self.logging then
-            self:shouldUpdateChannels()
             self:stop({console = true, toast = true})
         end
         return
@@ -981,7 +985,6 @@ function ApexLogger:step(dt)
     if CAR.isInPit then
         if not self.stint.isInRace and not self.app.settings.forceRaceMode then
             if self.logging then
-                self:shouldUpdateChannels()
                 self:stop({console = true, toast = true})
             end
             return
@@ -1033,12 +1036,7 @@ function ApexLogger:step(dt)
     end
 
     -- Hotlap first-lap detection:
-    if self.LOG == false then
-        if self.app.settings.udpEnable then
-            self:shouldUpdateChannels()
-        end
-        return
-    end
+    if self.LOG == false then return end
     if self.app.spawnStart == 'HOTLAP_START' and CAR.lapCount == 0 then
         if not self.stint.hotlapStarted and CAR.lapTimeMs > 0 and CAR.lapTimeMs < 50 then
             self.stint.hotlapStarted = true
@@ -1048,11 +1046,8 @@ function ApexLogger:step(dt)
             self:markLap()
             self:newLap(false)
             self.appUI.updateUIlog("LOG: hotlap started", self.appUI.colors.GREY)
-            return
         end
     end
-    
-    self:shouldUpdateChannels()
 end
 
 function ApexLogger:destroy()
