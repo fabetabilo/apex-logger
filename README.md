@@ -11,7 +11,7 @@ Apex Datalogger is an offline-first telemetry tool, capturing over 180 channels 
 <h4 align="center"><strong>
 <a href="#installation">Installation</a> - <a href="#features">Features</a>
 </br>
-<a href="https://fabetabilo.github.io/apex-docs/datalogger/getting-started/">Usage Guide</a>
+<a href="#live-telemetry">Live Telemetry</a> - <a href="https://fabetabilo.github.io/apex-docs/datalogger/getting-started/">Usage Guide</a>
 </strong></h4>
 
 <h4 align="center">for</h4>
@@ -47,6 +47,14 @@ If everything went well, two apps should be accesible in the session sidebar:
 </br>
 <em> Apex Hud & Apex Settings apps </em>
 </p>
+
+## Live Telemetry
+
+https://github.com/user-attachments/assets/42b2eb4e-1ad2-4351-ae76-0a0f5527965e
+<p align="center">
+  <sub><i>Note: TX mode feature used on testing dashboard </i></sub>
+</p>
+
 
 ## Features
 
