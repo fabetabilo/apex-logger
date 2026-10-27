@@ -8,7 +8,7 @@
 
 local APP = {
     NAME    = "Apex",
-    VERSION = "0.2.5",
+    VERSION = "0.2.6",
     DATA_RATES = {30, 50, 60, 100, 120},
     TX_PROTOCOL = 1,
     URL_UPDATE = "https://github.com/fabetabilo/apex-logger/releases",
