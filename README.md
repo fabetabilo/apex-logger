@@ -11,7 +11,7 @@ Apex Datalogger is an offline-first telemetry tool, capturing over 180 channels 
 <h4 align="center"><strong>
 <a href="#installation">Installation</a> - <a href="#features">Features</a>
 </br>
-<a href="https://fabetabilo.github.io/apex-docs/datalogger/getting-started/">Usage Guide</a>
+<a href="#live-telemetry">Live Telemetry</a> - <a href="https://fabetabilo.github.io/apex-docs/datalogger/getting-started/">Usage Guide</a>
 </strong></h4>
 
 <h4 align="center">for</h4>
@@ -19,6 +19,9 @@ Apex Datalogger is an offline-first telemetry tool, capturing over 180 channels 
 <img width="140" alt="Assetto Corsa" src="docs/images/ac.png">
 </p>
 
+## ROADMAP
+
+- Ensure MOTEC i2 logging compatibility
 
 ## Installation
 
@@ -45,12 +48,20 @@ If everything went well, two apps should be accesible in the session sidebar:
 <em> Apex Hud & Apex Settings apps </em>
 </p>
 
+## Live Telemetry
+
+https://github.com/user-attachments/assets/42b2eb4e-1ad2-4351-ae76-0a0f5527965e
+<p align="center">
+  <sub><i>Note: TX mode feature used on testing dashboard </i></sub>
+</p>
+
+
 ## Features
 
-Apex Datalogger logs data the same way a real datalogger in motorsports would, but instead of writing to an SD card, the sim telemetry is saved lap by lap to a dedicated laps folder inside the app directory `apps/lua/apex/laps/`.
+Apex Datalogger logs data the same way a real datalogger in motorsports would, but instead of writing to an SD card, the sim telemetry is saved stint by stint to a dedicated laps folder inside the app directory `apps/lua/apex/laps/`.
 
 - **Fully automatic**: install once and let it run in the background, no need to keep the app window open. Keeping the HUD active is recommended just to check the logger mode status.
-- **Stint-based logging**: laps are grouped and saved by stint, with automatic detection of invalid stints.
+- **Stint-based logging**: each stint is saved as a single CSV file, with automatic detection of invalid stints. Data is written to disk every second, so a game crash loses at most the last second.
 - **Local logging & UDP streaming**: capture telemetry locally, stream it live over UDP, or run both at the same time, each mode works independently.
 - **LOG mode**: for saving laps locally.
 - **TX mode**: for transmitting telemetry over UDP to a specific IP and port.
@@ -61,7 +72,7 @@ Apex Datalogger logs data the same way a real datalogger in motorsports would, b
     - `car_info` — car status, fuel, electronics, temperatures, damage, driving modes, race position, sector times.
     - `tires` — tire temperatures, pressures, and surface wear.
     - `dyn` — vehicle dynamics, speed, drivetrain torque and power, wheels-off-track count.
-    - `ext_elect` (extended electronics) — hybrid and prototype/open-wheel electronics (LMP1, LMH, F1), including DRS and ERS/KERS support.
+    - `ext_elec` (extended electronics) — hybrid and prototype/open-wheel electronics (LMP1, LMH, F1), including DRS and ERS/KERS support.
     - `aero` — aerodynamic forces and drag, including per-wing aero load.
     - `sim_info` — force feedback, simulator FPS, physics rate, CPU time.
     - `input` — driver inputs: RPM, clutch, throttle, brake, TC/ABS/TC2 modes, lap times, brake torque.
@@ -70,10 +81,12 @@ Apex Datalogger logs data the same way a real datalogger in motorsports would, b
     - `gforce` — G-forces.
     - `susp` (suspension) — full suspension geometry: ride heights, CG height, suspension travel, damper data, camber, toe, caster.
     > Note: For more channel information check the official [documentation](https://fabetabilo.github.io/apex-docs/datalogger/features/)
+- **Multi-rate sampling**: slow groups are sampled at fixed rates (`session` and `car_info` at 1 Hz; `tires`, `dyn`, `ext_elec`, `aero` and `sim_info` at 10 Hz), while the fast groups (`input`, `gps`, `tires_dyn`, `gforce` and `susp`) run at a selectable rate: 30, 50, 60, 100 or 120 Hz.
+    > Note: CSP updates car data once per rendered frame, so the real sampling rate is capped by the game FPS. At 60 FPS, any rate above 60 Hz still records about 60 samples per second. The Settings tab shows the current FPS and warns when the selected rate is above it.
 - **Python buffer app**: an `apex` Python app acts as a data buffer, extending telemetry acquisition.
 - **Extended Control app integration**: map buttons to toggle LOG and TX modes on and off.
-- **Lap exports**: laps are exported with a customizable driver name and timestamps.
-- **Lap CSV export**: laps are exported in .CSV format files.
+- **Stint exports**: stints are exported with a customizable driver name and timestamps.
+- **Stint CSV export**: every sample carries its time in seconds from the stint start, and a JSON log per stint stores the session details, lap times and lap markers.
 - **Built-in console**: shows live datalogger status and a running log of completed laps, including lap time, outlap flag, and invalid-lap flag.
 - **Session mode support**: Hotlap, Practice, and Race are supported; other modes are untested.
 - **Two in-game modules**:

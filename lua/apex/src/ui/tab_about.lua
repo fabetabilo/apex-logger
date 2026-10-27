@@ -63,8 +63,10 @@ tabAbout.draw = function()
         appUI.tooltip("Open documentation page")
     end
 
-    ui.offsetCursorY(15)
-    ui.image("assets/icons/apex_logo.png", vec2(980, 275) * 0.2)
+    ui.offsetCursorY(40)
+    local logoSize = vec2(980, 275) * 0.2
+    ui.offsetCursorX(math.max((ui.availableSpaceX() - logoSize.x) / 2, 0))
+    ui.image("assets/icons/apex_logo.png", logoSize)
 
     ui.popStyleVar()
 end

@@ -19,6 +19,22 @@ tabSettings.init = function(state, ui, logger, helpersRef, appCfg)
     APP_CFG   = appCfg
 end
 
+-- LOG modes are mutually exclusive: Standard (none), Auto off logging or Race Mode
+local LOG_MODES = {
+    { label = "Standard",         autoOff = false, race = false, tip = "Logging stops in pit and starts a new stint on every pit exit" },
+    { label = "Auto off logging", autoOff = true,  race = false, tip = "Automatically disable logging when entering a race session" },
+    { label = "Race Mode",        autoOff = false, race = true,  tip = "Forcing race mode will always log, no auto-stop in pit, no restart. Stays recording until session end or disabled." },
+}
+
+-- Stint settings are locked while logging
+local function drawLockedHint(locked)
+    if not locked then return end
+    ui.sameLine()
+    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+    ui.text("(locked while logging)")
+    ui.popStyleColor()
+end
+
 -- Data rate sampling management ===============================================
 local function drawRateCombo(label, currentRate, callback)
     ui.setNextItemWidth(70)
@@ -89,31 +105,89 @@ tabSettings.draw = function()
     
     ui.offsetCursorY(5)
     ui.pushStyleVar(ui.StyleVar.IndentSpacing, 12)
-    
+
+    local locked = appLogger and appLogger.logging
+
     -- Driver information
     ui.text("Driver Information")
+    drawLockedHint(locked)
     ui.offsetCursorY(5)
-    
-    drawDriverCombo()
 
-    -- Shortcut buttons
+    if locked then ui.pushDisabled() end
+    drawDriverCombo()
+    if locked then ui.popDisabled() end
+
+    -- MODE options
     ui.offsetCursorY(15)
-    ui.text("Settings Folder")
+    ui.text("LOG Mode")
+    drawLockedHint(locked)
     ui.offsetCursorY(5)
-    if ui.button("Open settings file##openSettings", vec2(ui.availableSpaceX(), 22)) then
-        os.openInExplorer(appState.settingsPath)
+    ui.indent(12)
+    if locked then ui.pushDisabled() end
+    for _, mode in ipairs(LOG_MODES) do
+        local active = (appState.settings.autoLoggingOffRace == mode.autoOff) and (appState.settings.forceRaceMode == mode.race)
+        if ui.radioButton(mode.label, active) and not active then
+            appState.settings.autoLoggingOffRace = mode.autoOff
+            appState.settings.forceRaceMode = mode.race
+            appState.saveSettings()
+            appUI.updateUIlog("LOG mode: " .. mode.label, appUI.colors.GREY)
+        end
+        appUI.tooltip(mode.tip)
     end
-    if ui.itemHovered() then
-        ui.setMouseCursor(ui.MouseCursor.Hand)
-        appUI.tooltip("Open JSON settings file")
+    if locked then ui.popDisabled() end
+    ui.unindent(12)
+
+    ui.offsetCursorY(15)
+    ui.text("TX Mode")
+    ui.offsetCursorY(5)
+    ui.indent(12)
+
+    local LABEL_COLUMN = 120
+    local BUTTON_WIDTH = 140
+    ui.pushStyleVar(ui.StyleVar.ButtonTextAlign, vec2(0, 0.5))
+
+    ui.text("IP Address")
+    ui.sameLine(LABEL_COLUMN)
+    if ui.button(appState.settings.udpHost .. "##udpHostBtn", vec2(BUTTON_WIDTH, 0)) then
+        ui.modalPrompt('IP Address', 'Enter target IP address:', appState.settings.udpHost, function(value)
+            if not value or value == "" then return end
+            appState.settings.udpHost = value
+            appState.saveSettings()
+            if appLogger and appLogger.udpSender then
+                appLogger.udpSender.configure(appState.settings)
+            end
+        end)
     end
-    
+    appUI.tooltip("Change IP Address")
+
+    ui.text("Port")
+    ui.sameLine(LABEL_COLUMN)
+    if ui.button(tostring(appState.settings.udpPort) .. "##udpPortBtn", vec2(BUTTON_WIDTH, 0)) then
+        ui.modalPrompt('Port', 'Enter target port:', tostring(appState.settings.udpPort), function(value)
+            if not value or value == "" then return end
+            local port = tonumber(value)
+            if port then
+                appState.settings.udpPort = port
+                appState.saveSettings()
+                if appLogger and appLogger.udpSender then
+                    appLogger.udpSender.configure(appState.settings)
+                end
+            end
+        end)
+    end
+    appUI.tooltip("Change Port")
+
+    ui.unindent(12)
+    ui.popStyleVar()
+
     -- Channel group selection
     ui.offsetCursorY(15)
     ui.text("Channel Groups")
+    drawLockedHint(locked)
     ui.offsetCursorY(5)
 
     local cg = appState.settings.channelGroups
+    if locked then ui.pushDisabled() end
     if cg then
         -- ── LEFT COLUMN: 1 Hz & 10 Hz ─────────────────────────────────────
         ui.beginGroup()
@@ -173,11 +247,11 @@ tabSettings.draw = function()
         ui.unindent(12)
         ui.endGroup()
         
-        -- ── RIGHT COLUMN: 30 Hz & Customizable Hz ─────────────────────────
+        -- ── RIGHT COLUMN: fast groups at user customizable Hz ─────────────
         ui.sameLine(0, 16)
         ui.beginGroup()
         ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
-        ui.text("30 Hz")
+        ui.text(tostring(appState.settings.dataRate) .. " Hz")
         ui.offsetCursorY(5)
         ui.popStyleColor()
         ui.indent(12)
@@ -204,15 +278,7 @@ tabSettings.draw = function()
             appState.saveSettings()
         end
         appUI.tooltip("CG accelerations: lateral, longitudinal, vertical")
-        ui.unindent(12)
-        
-        -- user customizable Hz
-        ui.offsetCursorY(3)
-        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
-        ui.text(tostring(appState.settings.dataRate) .. " Hz")
-        ui.offsetCursorY(5)
-        ui.popStyleColor()
-        ui.indent(12)
+
         if ui.checkbox("Suspension##cg_susp", cg.susp ~= false) then
             cg.susp = not (cg.susp ~= false)
             appState.saveSettings()
@@ -221,82 +287,50 @@ tabSettings.draw = function()
         ui.unindent(12)
         ui.endGroup()
     end
+    if locked then ui.popDisabled() end
 
-    -- Data sampling rates information
+    -- Fast groups sampling rate, real samples are capped by the game FPS
     ui.offsetCursorY(15)
-    ui.text("Custom Channels")
+    ui.text("Sampling Rate")
+    drawLockedHint(locked)
     ui.offsetCursorY(5)
 
+    if locked then ui.pushDisabled() end
     drawRateCombo("##rateMain", appState.settings.dataRate, function(rate)
         appState.settings.dataRate = rate
         if appLogger then appLogger:setRates() end
     end)
     ui.sameLine()
-    ui.text("Suspension Rate")
-    appUI.tooltip("Choose max data sampling rate for suspension channel")
+    ui.text("Fast Groups")
+    appUI.tooltip("Sampling rate for Inputs, GPS, Tire Dynamics, G-Force and Suspension")
+    if locked then ui.popDisabled() end
+
+    local fps = math.floor(SIM.fps + 0.5)
+    ui.sameLine()
+    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+    ui.text("(" .. fps .. " FPS)")
+    ui.popStyleColor()
+    appUI.tooltip("Car data updates once per rendered frame, so real samples per second are capped by the FPS")
+    -- 5% margin so the warning doesn't flicker when FPS hovers around the selected rate
+    if fps > 0 and appState.settings.dataRate > fps * 1.05 then
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.ORANGE)
+        ui.textWrapped("Rate above current FPS, real samples are capped at " .. fps .. " Hz")
+        ui.popStyleColor()
+    end
     ui.offsetCursorY(5)
 
-    -- MODE options
+    -- Shortcut buttons
     ui.offsetCursorY(15)
-    ui.text("LOG Mode")
+    ui.text("Settings Folder")
     ui.offsetCursorY(5)
-    ui.indent(12)
-    if ui.checkbox("Auto off logging", appState.settings.autoLoggingOffRace) then
-        appState.settings.autoLoggingOffRace = not appState.settings.autoLoggingOffRace
-        appState.saveSettings()
-        appUI.updateUIlog("Auto off logging mode: " .. (appState.settings.autoLoggingOffRace and "active" or "inactive"), appUI.colors.GREY)
+    if ui.button("Open settings file##openSettings", vec2(ui.availableSpaceX(), 22)) then
+        os.openInExplorer(appState.settingsPath)
     end
-    appUI.tooltip("Automatically disable logging when entering a race session")
+    if ui.itemHovered() then
+        ui.setMouseCursor(ui.MouseCursor.Hand)
+        appUI.tooltip("Open JSON settings file")
+    end
 
-    if ui.checkbox("Race Mode", appState.settings.forceRaceMode) then
-        appState.settings.forceRaceMode = not appState.settings.forceRaceMode
-        appState.saveSettings()
-        appUI.updateUIlog("Race mode: " .. (appState.settings.forceRaceMode and "active" or "inactive"), appUI.colors.GREY)
-    end
-    appUI.tooltip("Forcing race mode will always log, no auto-stop in pit, no restart. Stays recording until session end or disabled.")
-    ui.unindent(12)
-
-    ui.offsetCursorY(15)
-    ui.text("TX Mode")
-    ui.offsetCursorY(5)
-    ui.indent(12)
-    
-    local LABEL_COLUMN = 120
-    local BUTTON_WIDTH = 140
-    ui.pushStyleVar(ui.StyleVar.ButtonTextAlign, vec2(0, 0.5))
-    
-    ui.text("IP Address")
-    ui.sameLine(LABEL_COLUMN)
-    if ui.button(appState.settings.udpHost .. "##udpHostBtn", vec2(BUTTON_WIDTH, 0)) then
-        ui.modalPrompt('IP Address', 'Enter target IP address:', appState.settings.udpHost, function(value)
-            if not value or value == "" then return end
-            appState.settings.udpHost = value
-            appState.saveSettings()
-            if appLogger and appLogger.udpSender then
-                appLogger.udpSender.configure(appState.settings)
-            end
-        end)
-    end
-    appUI.tooltip("Change IP Address")
-    
-    ui.text("Port")
-    ui.sameLine(LABEL_COLUMN)
-    if ui.button(tostring(appState.settings.udpPort) .. "##udpPortBtn", vec2(BUTTON_WIDTH, 0)) then
-        ui.modalPrompt('Port', 'Enter target port:', tostring(appState.settings.udpPort), function(value)
-            if not value or value == "" then return end
-            local port = tonumber(value)
-            if port then
-                appState.settings.udpPort = port
-                appState.saveSettings()
-                if appLogger and appLogger.udpSender then
-                    appLogger.udpSender.configure(appState.settings)
-                end
-            end
-        end)
-    end
-    appUI.tooltip("Change Port")
-
-    ui.unindent(12)
     ui.popStyleVar()
 end
 

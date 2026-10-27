@@ -1,8 +1,11 @@
+local APP_CFG = require("cfg/app")
+
 local udpSender = {
     enabled = false,
     socket = nil,
     host = '127.0.0.1',
     port = 9996,
+    seq = 0,
 }
 
 ---@param host string target IP address
@@ -10,7 +13,8 @@ local udpSender = {
 function udpSender.init(host, port)
     udpSender.host = host
     udpSender.port = tonumber(port)
-    
+    udpSender.seq = 0
+
     if udpSender.socket then
         if udpSender.socket.close then udpSender.socket:close() end
         udpSender.socket = nil
@@ -64,15 +68,18 @@ end
 
 --- Send channel data as a UDP packet
 --- called by the logger at each updateChannels() call with the line data table
----@param lineTable table array of channel values for this group tick
+---@param lineTable table group tick: "#groupId#", sessionTimeLeft, then the channel values
 ---@param groupId string the group identifier (e.g. "input", "gps", "susp")
----@param rate number the data rate in Hz (1, 10, 30, or user Hz)
+---@param rate number the data rate in Hz (1, 10, or user Hz)
 function udpSender.send(lineTable, groupId, rate)
     if not udpSender.enabled then return end
     if not udpSender.socket then return end
-    
-    -- Format: APEX|<groupId>|<rate>|<timestamp>|<val1>;<val2>;...
-    local payload = string.format("APEX|%s|%d|%f|%s", groupId, rate, os.preciseClock(), table.concat(lineTable, ";"))
+
+    -- seq restarts with the socket, a gap on the receiver means lost packets
+    udpSender.seq = udpSender.seq + 1
+    -- Format: APEX|<protocol>|<seq>|<groupId>|<rate>|<clock>|<sessionTimeLeft>|<val1>;<val2>;...
+    local payload = string.format("APEX|%d|%d|%s|%d|%f|%s|%s", APP_CFG.TX_PROTOCOL, udpSender.seq, groupId, rate,
+        os.preciseClock(), lineTable[2], table.concat(lineTable, ";", 3))
     
     if udpSender.socket.send then
         udpSender.socket:send(payload)

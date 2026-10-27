@@ -148,33 +148,52 @@ helpers.distance3d = function(pt1, pt2)
     return math.sqrt(dx * dx + dy * dy + dz * dz)
 end
 
+--- Shallow copy of an array table
+---@param list table
+---@return table
+helpers.copyList = function(list)
+    local copy = {}
+    for i, v in ipairs(list) do copy[i] = v end
+    return copy
+end
+
 -- File operations =================================================
 
---- Clean old lap .csv files, keeping ones referenced by current log
----@deprecated incompatible with driver+timestamp file naming
+--- Delete orphan lap .csv files of the older per-lap format, not referenced by any log_*.json.
+--- Stint files need no cleanup: invalid or cancelled stints delete their .csv when they end,
+--- and a stint .csv without its .json (game crash) is kept so its data can be recovered.
 ---@param lapFolder string path to laps directory
-helpers.cleanLapsFiles = function(lapFolder, logger)
+helpers.cleanLapsFiles = function(lapFolder)
     try(
         function()
             local keep = {}
-            if logger and logger.logging then
-                keep = logger.LOG.lapFiles
-            else
-                local logPath = ac.dirname() .. "\\laps\\log.json"
-                if io.exists(logPath) then
-                    local data = io.load(logPath)
-                    local jsonlog = JSON.parse(data)
-                    if jsonlog == nil then return end
-                    keep = jsonlog.lapFiles
+            local function keepFiles(lapFiles)
+                for _, path in ipairs(lapFiles or {}) do
+                    keep[path:match("[^\\/]+$")] = true
                 end
             end
 
-            io.scanDir(lapFolder, "lap_*.csv", function(fileName, fileAttributes)
-                local fPath = lapFolder .. "\\" .. fileName
-                if not table.contains(keep, fPath) then
-                    io.deleteFile(fPath)
+            local unreadable = false
+            io.scanDir(lapFolder, "log_*.json", function(fileName)
+                local jsonlog = JSON.parse(io.load(lapFolder .. "\\" .. fileName) or "")
+                if type(jsonlog) == "table" then
+                    keepFiles(jsonlog.lapFiles)
+                else
+                    unreadable = true
                 end
             end)
+            -- never delete laps an unreadable log may reference
+            if unreadable then return end
+
+            local orphans = {}
+            io.scanDir(lapFolder, "lap_*.csv", function(fileName)
+                if not keep[fileName] then
+                    orphans[#orphans + 1] = lapFolder .. "\\" .. fileName
+                end
+            end)
+            for _, fPath in ipairs(orphans) do
+                io.deleteFile(fPath)
+            end
         end,
         function(err)
             -- silently ignore cleanup errors

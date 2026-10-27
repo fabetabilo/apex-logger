@@ -70,18 +70,6 @@ tabData.draw = function()
     end
     
 
-    ui.pushStyleVar(ui.StyleVar.IndentSpacing, 12)
-    ui.offsetCursorY(15)
-    ui.text("Laps Folder")
-    ui.offsetCursorY(5)
-    if ui.button("Open laps folder##openLaps", vec2(ui.availableSpaceX(), 22)) then
-        os.openInExplorer(ac.dirname() .. "\\laps")
-    end
-    if ui.itemHovered() then
-        ui.setMouseCursor(ui.MouseCursor.Hand)
-        appUI.tooltip("Open logged laps folder")
-    end
-    
     ui.offsetCursorY(15)
     ui.text("Track Information")
     ui.offsetCursorY(5)
