@@ -11,7 +11,7 @@ Apex Datalogger is an offline-first telemetry tool, capturing over 180 channels 
 <h4 align="center"><strong>
 <a href="#installation">Installation</a> - <a href="#features">Features</a>
 </br>
-<a href="#live-telemetry">Live Telemetry</a> - <a href="https://fabetabilo.github.io/apex-docs/datalogger/getting-started/">Usage Guide</a>
+<a href="#logging">Logging</a> - <a href="#live-telemetry">Live Telemetry</a> - <a href="https://fabetabilo.github.io/apex-docs/datalogger/getting-started/">Usage Guide</a>
 </strong></h4>
 
 <h4 align="center">for</h4>
@@ -21,7 +21,8 @@ Apex Datalogger is an offline-first telemetry tool, capturing over 180 channels 
 
 ## ROADMAP
 
-- Ensure MOTEC i2 logging compatibility
+- MOTEC i2 logging compatibility
+- F1 open-wheel cars full compatibility
 
 ## Installation
 
@@ -44,8 +45,15 @@ If everything went well, two apps should be accesible in the session sidebar:
 
 <p align="center">
 <img src="docs/vid/usage0.gif" alt="sidebar" width="800">
-</br>
-<em> Apex Hud & Apex Settings apps </em>
+</p>
+<p align="center">
+  <sub><i>Apex Hud & Apex Settings apps</i></sub>
+</p>
+
+## Logging
+
+<p align="center">
+  <sub><i>LOG mode feature</i></sub>
 </p>
 
 ## Live Telemetry
@@ -80,7 +88,7 @@ Apex Datalogger logs data the same way a real datalogger in motorsports would, b
     - `tires_dyn` — tire dynamics: forces, slip, loads, wheel speeds.
     - `gforce` — G-forces.
     - `susp` (suspension) — full suspension geometry: ride heights, CG height, suspension travel, damper data, camber, toe, caster.
-    > Note: For more channel information check the official [documentation](https://fabetabilo.github.io/apex-docs/datalogger/features/)
+    > Note: For more channel information check the [channel](./docs/CHANNELS.md) docs.
 - **Multi-rate sampling**: slow groups are sampled at fixed rates (`session` and `car_info` at 1 Hz; `tires`, `dyn`, `ext_elec`, `aero` and `sim_info` at 10 Hz), while the fast groups (`input`, `gps`, `tires_dyn`, `gforce` and `susp`) run at a selectable rate: 30, 50, 60, 100 or 120 Hz.
     > Note: CSP updates car data once per rendered frame, so the real sampling rate is capped by the game FPS. At 60 FPS, any rate above 60 Hz still records about 60 samples per second. The Settings tab shows the current FPS and warns when the selected rate is above it.
 - **Python buffer app**: an `apex` Python app acts as a data buffer, extending telemetry acquisition.
