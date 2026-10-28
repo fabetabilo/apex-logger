@@ -52,15 +52,21 @@ If everything went well, two apps should be accesible in the session sidebar:
 
 ## Logging
 
+Logging is simple: select the channel groups to record and hit the **LOG** mode checkbox. The logger stores each stint in the `apps/lua/apex/laps/` folder. 
+For configuration details and a complete usage walkthrough, see the official [Usage guide](https://fabetabilo.github.io/apex-docs/datalogger/getting-started/).
+
+https://github.com/user-attachments/assets/200624fc-1d2c-4988-9f78-9cbbd2cfce6f
 <p align="center">
   <sub><i>LOG mode feature</i></sub>
 </p>
 
 ## Live Telemetry
 
+The video demonstrates **TX** mode, streaming the car telemetry over UDP in real time to a live dashboard.
+
 https://github.com/user-attachments/assets/42b2eb4e-1ad2-4351-ae76-0a0f5527965e
 <p align="center">
-  <sub><i>Note: TX mode feature used on testing dashboard </i></sub>
+  <sub><i>Note: TX mode feature used on testing dashboard</i></sub>
 </p>
 
 
