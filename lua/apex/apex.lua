@@ -7,6 +7,7 @@ local udpSender  = require("src/utils/udp_sender")
 local appUI      = require("src/ui/ui_helpers")
 local tabLogging = require("src/ui/tab_logging")
 local tabData    = require("src/ui/tab_data")
+local tabTools   = require("src/ui/tab_tools")
 local tabSettings = require("src/ui/tab_settings")
 local tabAbout   = require("src/ui/tab_about")
 local statusHud  = require("src/ui/app_hud")
@@ -199,6 +200,7 @@ local currentTab = 1
 local tabs = {
     { name = "Logging" },
     { name = "Data" },
+    { name = "Tools" },
     { name = "Settings" },
     { name = "About" },
 }
@@ -230,6 +232,7 @@ local function initApp()
     -- initialize UI tabs with its references
     tabLogging.init(appMain, appUI, appLogger, helpers)
     tabData.init(appMain, appUI)
+    tabTools.init(appMain, appUI)
     tabSettings.init(appMain, appUI, appLogger, helpers, APP_CFG)
     tabAbout.init(appMain, appUI)
     statusHud.init(appMain, appLogger)
@@ -246,6 +249,12 @@ local function initApp()
     local lapsDir = ac.dirname() .. "\\laps"
     if not io.dirExists(lapsDir) then
         io.createDir(lapsDir)
+    end
+    
+    -- ensures tracks directory exists for track exporter
+    local tracksDir = ac.dirname() .. "\\tracks"
+    if not io.dirExists(tracksDir) then
+        io.createDir(tracksDir)
     end
     
     -- clean orphan lap files left by old per-lap format
@@ -302,8 +311,10 @@ function script.main(dt)
     elseif currentTab == 2 then
         tabData.draw()
     elseif currentTab == 3 then
-        tabSettings.draw()
+        tabTools.draw()
     elseif currentTab == 4 then
+        tabSettings.draw()
+    elseif currentTab == 5 then
         tabAbout.draw()
     end
 end
