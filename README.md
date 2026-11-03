@@ -103,6 +103,7 @@ Apex Datalogger logs data the same way a real datalogger in motorsports would, b
 - **Stint CSV export**: every sample carries its time in seconds from the stint start, and a JSON log per stint stores the session details, lap times and lap markers.
 - **Built-in console**: shows live datalogger status and a running log of completed laps, including lap time, outlap flag, and invalid-lap flag.
 - **Session mode support**: Hotlap, Practice, and Race are supported; other modes are untested.
+- **Track export:** extract circuit centerline, inner/outer track borders, lap splits, and bounding box to a JSON format.
 - **Two in-game modules**:
     - **Apex Settings** — configure channel groups, modes, and export options.
     - **Apex HUD** — a simple, at-a-glance display of what the app is doing, with two indicators showing the current LOG and TX status.
