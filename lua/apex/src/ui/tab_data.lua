@@ -1,5 +1,6 @@
 local CAR  = ac.getCar(0)
 local CPHYS = ac.getCarPhysics(0)
+local SIM   = ac.getSim()
 
 local tabData = {}
 
@@ -81,6 +82,32 @@ tabData.draw = function()
     ui.sameLine(175)
     
     ui.text(appState.trackLayout or ac.getTrackID())
+
+    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREY)
+    ui.text("Layout")
+    ui.popStyleColor()
+    
+    ui.sameLine(175)
+    
+    local trackLayout = ac.getTrackLayout()
+    ui.text((trackLayout and trackLayout ~= "") and trackLayout or "-")
+
+    ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.GREY)
+    ui.text("Length")
+    ui.popStyleColor()
+    
+    ui.sameLine(175)
+    
+    local trackLength = SIM and SIM.trackLengthM or 0
+    if trackLength > 0 then
+        ui.text(string.format("%d", math.floor(trackLength + 0.5))) --rounded
+        ui.sameLine(275)
+        ui.pushStyleColor(ui.StyleColor.Text, appUI.colors.MID_GREY)
+        ui.text("m")
+        ui.popStyleColor()
+    else
+        ui.text("-")
+    end
     
     ui.offsetCursorY(15)
     ui.text("Car Data")

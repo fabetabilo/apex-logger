@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3] - 2026-11-02
+
+### Added
+- **Track Exporter tool:** new Tools tab in Settings window to extract track information (centerline, left and right borders, lap sectors, bounding box, and start/finish angle) to a standardized JSON file using CSP AI spline (for external telemetry visualizers).
 
 ## [0.2.6] - 2026-10-26
 
@@ -35,5 +39,6 @@
 - Car data and aeromap detection.
 - Persistent settings.
 
+[0.3]: https://github.com/fabetabilo/apex-logger/releases/tag/v0.3
 [0.2.6]: https://github.com/fabetabilo/apex-logger/releases/tag/v0.2.6
 [0.2]: https://github.com/fabetabilo/apex-logger/releases/tag/v0.2
